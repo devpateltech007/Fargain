@@ -49,6 +49,17 @@ Verified so far:
   `{ products[], next_page_token }`, each product has `offers[]` with `domain`, `price.amount`,
   `price.currency`, `availability`, `url`. `GET /v1/products/{id}` is free (use for price watch).
 - Anthropic: model IDs are not hard-coded; `npm run check-env:live` lists them via `GET /v1/models`.
+- PayPal Orders v2 (sandbox, verified live with `npm run probe:paypal` and `npm run e2e:paypal`):
+  creating an order with `payment_source.paypal.experience_context` returns status
+  `PAYER_ACTION_REQUIRED` and a `payer-action` link (not `approve`); repeating a
+  `PayPal-Request-Id` returns the same order; capture before approval is 422 `ORDER_NOT_APPROVED`;
+  after buyer approval the order is `APPROVED` and capture returns `COMPLETED`. PayPal appends
+  `?token=<orderId>&PayerID=...` to the return URL. Webhooks are delivered only to public HTTPS
+  URLs, so local dev uses polling + the return URL; webhooks are verified via
+  `POST /v1/notifications/verify-webhook-signature`.
+- Meta: the provided `IG_ACCESS_TOKEN` is a Facebook Graph system-user token (graph.facebook.com),
+  not an Instagram Login token, and currently sees 0 Pages. Phase 5 therefore uses the
+  Facebook-Login (Page-linked) Instagram messaging flavor. `npm run probe:meta` re-checks this.
 
 ## Stack and layout
 
