@@ -1,0 +1,22 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+
+# Local SQLite data
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Extension packaging
+extension/*.zip
+extension/*.crx
+extension/*.pem

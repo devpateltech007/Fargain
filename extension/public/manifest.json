@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Fargain",
+  "version": "0.1.0",
+  "description": "Your agent haggles, PayPal settles. Drafts are inserted for you to review; you always click send.",
+  "permissions": ["sidePanel", "storage"],
+  "host_permissions": ["http://localhost:3000/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Open Fargain"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/mock-seller/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
