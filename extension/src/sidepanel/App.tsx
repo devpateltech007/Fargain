@@ -190,6 +190,26 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
         </p>
       )}
       {pageError && <p className="muted">{pageError}</p>}
+      {ctx?.diagnostics && (
+        <details className="card small" open={!ctx.listing}>
+          <summary>Page check ({ctx.site})</summary>
+          {!ctx.listing && (
+            <p className="warn">
+              Could not read the listing on this page. Send these results to the developer.
+            </p>
+          )}
+          <table>
+            <tbody>
+              {Object.entries(ctx.diagnostics).map(([k, v]) => (
+                <tr key={k}>
+                  <td className="muted">{k}</td>
+                  <td>{String(v)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      )}
       {ctx?.listing && (
         <section className="card">
           <div className="small muted">{ctx.site}</div>

@@ -8,6 +8,8 @@ export interface PageContext {
   site: SiteId | null;
   listing: Listing | null;
   conversation: ConversationMessage[];
+  /** Which selectors matched (best-effort adapters only). No page text. */
+  diagnostics?: Record<string, string | number | boolean>;
 }
 
 export type ContentResponse =

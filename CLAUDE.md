@@ -81,6 +81,17 @@ schema}` and arrives in a `text` block. Forced tool use (`tool_choice` any/tool)
   probes; LLM flags are merged in, never substituted.
 - Agreement detection is a suggestion only; the user must confirm the price (`confirm-price`).
 
+## Facebook Marketplace adapter (extension/src/adapters/marketplace)
+
+- Best-effort and UNVERIFIED against a live page (Facebook requires login). All hooks are in
+  `selectors.ts`: URL patterns, ARIA roles/labels, `contenteditable[role=textbox]`. Fixtures are
+  synthetic. The side panel "Page check" shows which selectors matched (no page text).
+- Item page and chat thread both map to the canonical URL
+  `https://www.facebook.com/marketplace/item/<id>/`, so they share one negotiation.
+- The content script matches all of facebook.com (SPA navigation) but stays inert outside
+  `/marketplace/item/*` and `/messages/t/*`; DOM observation only runs on those pages.
+- Only fills the message box. Automating Facebook may violate its terms; the user always sends.
+
 ## Stack and layout
 
 - `shared/`: zod schemas (domain enums, LLM contracts) + JSON Schemas for structured LLM output.

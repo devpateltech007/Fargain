@@ -1,0 +1,50 @@
+<!-- SYNTHETIC fixture. Hand-written to mimic the stable hooks of a Facebook Marketplace item page
+     (role="main", h1 title, price span, profile link, "Details" section, popup chat dialog with a
+     role="grid" message list and a Lexical contenteditable textbox). NOT captured from facebook.com.
+     Replace with a sanitized real capture when available. -->
+<div class="x1" role="navigation"><a href="/marketplace/">Marketplace</a></div>
+<div role="main">
+  <div class="x2">
+    <img alt="Product photo of Sony WH-1000XM5" src="https://scontent.example/p1.jpg" />
+  </div>
+  <div class="x3">
+    <h1><span dir="auto">Sony WH-1000XM5 Noise Cancelling Headphones</span></h1>
+    <div><span dir="auto">$180</span></div>
+    <div><span dir="auto">Listed 2 days ago in Brooklyn, NY</span></div>
+  </div>
+  <div class="x4">
+    <span dir="auto">Details</span>
+    <span dir="auto">Condition</span>
+    <span dir="auto">Used - Like New</span>
+  </div>
+  <div class="x5">
+    <span dir="auto">Description</span>
+    <div dir="auto">Barely used, comes with case and cables. Pickup only.</div>
+  </div>
+  <div class="x6">
+    <span dir="auto">Seller information</span>
+    <a href="/marketplace/profile/100012345/"><span>Jordan M.</span></a>
+  </div>
+</div>
+<div role="dialog" aria-label="Chat">
+  <a href="/marketplace/item/1234567890123456/?ref=chat"
+    >Sony WH-1000XM5 Noise Cancelling Headphones · $180</a
+  >
+  <div role="grid" aria-label="Messages in conversation with Jordan M.">
+    <div role="row">
+      <h5><span>You sent</span></h5>
+      <div dir="auto">Hi, is this still available?</div>
+    </div>
+    <div role="row">
+      <h5><span>Jordan</span></h5>
+      <div dir="auto">Yes! Asking $180.</div>
+    </div>
+    <div role="row"><span>Today at 3:12 PM</span></div>
+  </div>
+  <form>
+    <div contenteditable="true" role="textbox" aria-label="Message" data-lexical-editor="true">
+      <p><br /></p>
+    </div>
+    <div aria-label="Press enter to send" role="button" tabindex="0">Send</div>
+  </form>
+</div>

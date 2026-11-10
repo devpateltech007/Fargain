@@ -37,4 +37,9 @@ export interface SiteAdapter {
   insertMessage(text: string): boolean;
   /** Subscribe to listing/conversation changes. Returns an unsubscribe function. */
   onChange(cb: () => void): () => void;
+  /**
+   * Optional: which selectors matched on this page, for debugging best-effort adapters.
+   * Values must be counts/booleans/short labels, never page text (it may contain personal data).
+   */
+  diagnose?(): Record<string, string | number | boolean>;
 }

@@ -17,7 +17,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://localhost:3000/mock-seller/*", "http://127.0.0.1:3000/mock-seller/*"],
+      "matches": [
+        "http://localhost:3000/mock-seller/*",
+        "http://127.0.0.1:3000/mock-seller/*",
+        "https://www.facebook.com/*",
+        "https://web.facebook.com/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

@@ -29,7 +29,10 @@ export function fillComposeBox(el: Element, value: string): boolean {
     el.focus();
     return true;
   }
-  if (el instanceof HTMLElement && el.isContentEditable) {
+  if (
+    el instanceof HTMLElement &&
+    (el.isContentEditable || el.getAttribute('contenteditable') === 'true')
+  ) {
     el.focus();
     // execCommand keeps editor frameworks (Lexical/Draft.js) in sync; fall back to textContent.
     const sel = el.ownerDocument.getSelection();
@@ -51,6 +54,30 @@ export function fillComposeBox(el: Element, value: string): boolean {
     return true;
   }
   return false;
+}
+
+/** First element matching any selector in the list (selectors are tried in order). */
+export function firstMatch<T extends Element = Element>(
+  root: ParentNode,
+  selectors: readonly string[],
+): { el: T; selector: string } | null {
+  for (const selector of selectors) {
+    const el = root.querySelector<T>(selector);
+    if (el) return { el, selector };
+  }
+  return null;
+}
+
+/** Calls `cb` when location.href changes (SPA navigation). Returns an unsubscribe function. */
+export function watchUrl(win: Window, cb: () => void, intervalMs = 1000): () => void {
+  let last = win.location.href;
+  const t = setInterval(() => {
+    if (win.location.href !== last) {
+      last = win.location.href;
+      cb();
+    }
+  }, intervalMs);
+  return () => clearInterval(t);
 }
 
 /** Debounced MutationObserver on `target`. Returns an unsubscribe function. */
