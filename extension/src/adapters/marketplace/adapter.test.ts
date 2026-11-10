@@ -129,6 +129,36 @@ describe('MarketplaceAdapter on an item page with the inline "Send seller a mess
   });
 });
 
+describe('description parsing (regression from a live item page)', () => {
+  it('skips the Condition label and value under "Details" and returns the seller text', () => {
+    load(
+      'https://www.facebook.com/marketplace/item/999/',
+      `<div role="main"><h1><span>Bike</span></h1><div><span>$90</span></div>
+        <span dir="auto">Details</span>
+        <span dir="auto">Condition</span><span dir="auto">Used - Good</span>
+        <div dir="auto">Size medium frame, new tires last month, small scratch on top tube.</div>
+      </div>`,
+    );
+    const l = createMarketplaceAdapter(document).getListing()!;
+    expect(l.description).toBe(
+      'Size medium frame, new tires last month, small scratch on top tube.',
+    );
+    expect(l.attributes).toMatchObject({ condition: 'Used - Good' });
+  });
+
+  it('returns no description rather than a label when the seller wrote none', () => {
+    load(
+      'https://www.facebook.com/marketplace/item/1000/',
+      `<div role="main"><h1><span>Bike</span></h1><div><span>$90</span></div>
+        <span dir="auto">Details</span><span dir="auto">Condition</span><span dir="auto">Used - Good</span>
+      </div>`,
+    );
+    const a = createMarketplaceAdapter(document);
+    expect(a.getListing()!.description).toBeUndefined();
+    expect(a.diagnose!()).toMatchObject({ condition_found: true, description_chars: 0 });
+  });
+});
+
 describe('choosing between two unlabelled textareas (shape seen on a live item page)', () => {
   it('skips hidden textareas and prefers the one next to "Send seller a message"', () => {
     load(

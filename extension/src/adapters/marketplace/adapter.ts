@@ -19,15 +19,43 @@ function currencyOf(raw: string): string | undefined {
   return /\$/.test(raw) ? 'USD' : undefined;
 }
 
-/** Text following a heading/label like "Description" within the same section, best effort. */
-function textAfterLabel(root: ParentNode, labels: readonly string[]): string | undefined {
-  const spans = [...root.querySelectorAll<HTMLElement>('span, h2, h3, div[dir="auto"]')];
-  for (const label of labels) {
-    const idx = spans.findIndex((s) => s.textContent?.trim().toLowerCase() === label.toLowerCase());
+const textNodes = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLElement>('span, h2, h3, div[dir="auto"]')]
+    .map((e) => e.textContent?.trim() ?? '')
+    .filter(Boolean);
+
+/** Short field value right after a field label ("Condition" -> "Used - Like New"). */
+function fieldValue(root: ParentNode, labels: readonly string[]): string | undefined {
+  const texts = textNodes(root);
+  const lower = labels.map((l) => l.toLowerCase());
+  const idx = texts.findIndex((t) => lower.includes(t.toLowerCase()));
+  if (idx === -1) return undefined;
+  return texts.slice(idx + 1, idx + 4).find((t) => !lower.includes(t.toLowerCase()));
+}
+
+/**
+ * Seller-written description after a section heading ("Description"/"Details"). Live check: on a
+ * real page the text right after "Details" was the "Condition" label, which we passed on as the
+ * description. Now known labels and their values are skipped, and short fragments are ignored.
+ */
+function descriptionAfter(root: ParentNode): string | undefined {
+  const texts = textNodes(root);
+  const headings = S.listing.descriptionHeadings.map((h) => h.toLowerCase());
+  const fieldLabels = [...S.listing.conditionLabels, ...S.listing.locationLabels].map((l) =>
+    l.toLowerCase(),
+  );
+  for (const heading of headings) {
+    const idx = texts.findIndex((t) => t.toLowerCase() === heading);
     if (idx === -1) continue;
-    for (const next of spans.slice(idx + 1, idx + 8)) {
-      const t = next.textContent?.trim();
-      if (t && t.toLowerCase() !== label.toLowerCase() && !labels.includes(t)) return t;
+    for (let i = idx + 1; i < Math.min(texts.length, idx + 12); i++) {
+      const t = texts[i]!;
+      const tl = t.toLowerCase();
+      if (headings.includes(tl)) continue;
+      if (fieldLabels.includes(tl)) {
+        i++; // skip the label's value too
+        continue;
+      }
+      if (t.length >= S.listing.minDescriptionLength) return t;
     }
   }
   return undefined;
@@ -154,11 +182,11 @@ export function createMarketplaceAdapter(doc: Document = document): SiteAdapter 
     const seller = firstMatch(doc, S.listing.sellerLink)?.el.textContent?.trim() || undefined;
     const img = firstMatch<HTMLImageElement>(doc, S.listing.image)?.el;
     const attributes: Record<string, string> = {};
-    const condition = textAfterLabel(doc, S.listing.conditionLabels);
-    const location = textAfterLabel(doc, S.listing.locationLabels);
+    const condition = fieldValue(doc, S.listing.conditionLabels);
+    const location = fieldValue(doc, S.listing.locationLabels);
     if (condition) attributes.condition = condition.slice(0, 100);
     if (location) attributes.location = location.slice(0, 100);
-    const description = textAfterLabel(doc, S.listing.descriptionHeadings);
+    const description = descriptionAfter(doc);
 
     return {
       title: title.slice(0, 300),
@@ -253,6 +281,8 @@ export function createMarketplaceAdapter(doc: Document = document): SiteAdapter 
         title_selector: firstMatch(doc, S.listing.title)?.selector ?? 'none',
         price_found: listing?.price !== undefined,
         seller_found: Boolean(listing?.sellerLabel),
+        condition_found: Boolean(listing?.attributes?.condition),
+        description_chars: listing?.description?.length ?? 0,
         chat_container: chatContainer()?.selector ?? 'none',
         chat_rows: readConversation().length,
         compose_box: compose()?.selector ?? 'none',

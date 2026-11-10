@@ -25,6 +25,8 @@ export const MARKETPLACE = {
     /** Section headings whose following text is the description / details. */
     descriptionHeadings: ['Description', 'Details', "Seller's description"],
     conditionLabels: ['Condition'],
+    /** Shorter fragments after a heading are labels/values, not a description. */
+    minDescriptionLength: 15,
     locationLabels: ['Location', 'Listed in'],
   },
 
