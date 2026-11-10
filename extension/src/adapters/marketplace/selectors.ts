@@ -58,6 +58,13 @@ export const MARKETPLACE = {
       'div[contenteditable="true"][role="textbox"]',
       '[role="dialog"] textarea',
     ],
+    /**
+     * Live check (item page, first contact): two unlabelled textareas inside role=main, no dialog.
+     * When several candidates match, prefer a visible one whose nearby text contains a hint.
+     */
+    composeHints: ['Send seller a message', 'Message seller', 'Send a message'],
+    /** How many ancestor levels to search for a hint. */
+    hintDepth: 4,
     /** Anything that could be a text box; listed by the side panel "Page check" for debugging. */
     editableProbe: 'textarea, input[type="text"], [contenteditable="true"], [role="textbox"]',
   },

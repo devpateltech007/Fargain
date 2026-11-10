@@ -110,7 +110,7 @@ describe('MarketplaceAdapter on an item page with the inline "Send seller a mess
     document.querySelector('form')!.addEventListener('submit', () => (sent = true));
     document.querySelector('[aria-label="Send"]')!.addEventListener('click', () => (sent = true));
     const a = createMarketplaceAdapter(document);
-    expect(a.diagnose!().compose_box).toBe('[role="main"] textarea');
+    expect(a.diagnose!().compose_box).toBe('[role="main"] textarea (near hint)');
     expect(a.insertMessage('Would you take $20?')).toBe(true);
     expect(document.querySelector('textarea')!.value).toBe('Would you take $20?');
     expect(sent).toBe(false);
@@ -120,12 +120,35 @@ describe('MarketplaceAdapter on an item page with the inline "Send seller a mess
     const d = createMarketplaceAdapter(document).diagnose!();
     expect(d.editables).toBe(1);
     expect(d.editable_1).toBe(
-      'textarea | in main | aria-label=Send seller a message | placeholder=Hi, is this available?',
+      'textarea | in main | aria-label=Send seller a message | placeholder=Hi, is this available? | visible | hint 1 up | has text',
     );
     document.querySelector('textarea')!.value = 'private draft text';
     expect(JSON.stringify(createMarketplaceAdapter(document).diagnose!())).not.toContain(
       'private draft',
     );
+  });
+});
+
+describe('choosing between two unlabelled textareas (shape seen on a live item page)', () => {
+  it('skips hidden textareas and prefers the one next to "Send seller a message"', () => {
+    load(
+      'https://www.facebook.com/marketplace/item/888/',
+      `<div role="main"><h1><span>Chair</span></h1>
+        <div style="display:none"><textarea id="hidden"></textarea></div>
+        <div><span>Report listing</span><div><textarea id="other"></textarea></div></div>
+        <div><span>Send seller a message</span><div><div><textarea id="seller">Hi, is this available?</textarea></div></div></div>
+      </div>`,
+    );
+    const a = createMarketplaceAdapter(document);
+    expect(a.insertMessage('Would you take $40?')).toBe(true);
+    expect(document.querySelector<HTMLTextAreaElement>('#seller')!.value).toBe(
+      'Would you take $40?',
+    );
+    expect(document.querySelector<HTMLTextAreaElement>('#other')!.value).toBe('');
+    expect(document.querySelector<HTMLTextAreaElement>('#hidden')!.value).toBe('');
+    const d = a.diagnose!();
+    expect(d.editables).toBe(3);
+    expect(String(d.editable_1)).toContain('hidden');
   });
 });
 

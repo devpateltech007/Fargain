@@ -33,6 +33,34 @@ function textAfterLabel(root: ParentNode, labels: readonly string[]): string | u
   return undefined;
 }
 
+/** Not hidden by attribute, aria-hidden ancestor, or computed display/visibility. */
+export function isVisible(el: HTMLElement, win: Window): boolean {
+  if (el.closest('[hidden], [aria-hidden="true"]')) return false;
+  for (let n: HTMLElement | null = el; n; n = n.parentElement) {
+    const cs = win.getComputedStyle(n);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+  }
+  return true;
+}
+
+/**
+ * Levels up to the nearest ancestor containing a compose hint, or Infinity if none within
+ * S.chat.hintDepth. Smaller is closer: a shared outer container (e.g. role=main) contains the hint
+ * for every textarea, so "contains a hint" alone cannot tell boxes apart.
+ */
+export function hintDistance(el: Element): number {
+  let n: Element | null = el.parentElement;
+  for (let depth = 1; n && depth <= S.chat.hintDepth; depth++, n = n.parentElement) {
+    // Stop at containers shared with other text boxes: a hint there is not specific to this box.
+    if (n.querySelectorAll(S.chat.editableProbe).length > 1) return Infinity;
+    const t = n.textContent ?? '';
+    if (S.chat.composeHints.some((h) => t.includes(h))) return depth;
+  }
+  return Infinity;
+}
+
+export const nearHint = (el: Element): boolean => hintDistance(el) !== Infinity;
+
 /**
  * Structural description of up to 5 text boxes on the page, e.g.
  * "textarea | in main | aria-label=Send seller a message". Never includes the box's value.
@@ -56,6 +84,10 @@ export function describeEditables(doc: Document): Record<string, string | number
         : '',
       el.getAttribute('aria-label') ? `aria-label=${clip(el.getAttribute('aria-label'))}` : '',
       el.getAttribute('placeholder') ? `placeholder=${clip(el.getAttribute('placeholder'))}` : '',
+      isVisible(el, doc.defaultView ?? window) ? 'visible' : 'hidden',
+      Number.isFinite(hintDistance(el)) ? `hint ${hintDistance(el)} up` : 'no hint',
+      // Only whether a value exists, never the value itself.
+      'value' in el && (el as HTMLTextAreaElement).value ? 'has text' : 'empty',
     ].filter(Boolean);
     out[`editable_${i + 1}`] = parts.join(' | ');
   });
@@ -68,7 +100,31 @@ export function createMarketplaceAdapter(doc: Document = document): SiteAdapter 
   const isItemPage = () => S.itemPath.test(win.location.pathname);
   const isThreadPage = () => S.threadPath.test(win.location.pathname);
   const chatContainer = () => firstMatch(doc, S.chat.container);
-  const compose = () => firstMatch(doc, S.chat.compose);
+  /**
+   * For each compose selector (in order), collect all matches; choose a visible match near a hint
+   * ("Send seller a message"), else the first visible match. Falls through to the next selector
+   * only if nothing visible matched.
+   */
+  const compose = (): { el: Element; selector: string } | null => {
+    for (const selector of S.chat.compose) {
+      const visible = [...doc.querySelectorAll<HTMLElement>(selector)].filter((el) =>
+        isVisible(el, win),
+      );
+      if (!visible.length) continue;
+      // Closest to a hint wins; ties keep document order.
+      let best = visible[0]!;
+      let bestDist = hintDistance(best);
+      for (const el of visible.slice(1)) {
+        const d = hintDistance(el);
+        if (d < bestDist) {
+          best = el;
+          bestDist = d;
+        }
+      }
+      return { el: best, selector: bestDist !== Infinity ? `${selector} (near hint)` : selector };
+    }
+    return null;
+  };
 
   function readListingFromItemPage(): Listing | null {
     const url = canonicalItemUrl(win.location.href);
