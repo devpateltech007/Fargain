@@ -33,6 +33,35 @@ function textAfterLabel(root: ParentNode, labels: readonly string[]): string | u
   return undefined;
 }
 
+/**
+ * Structural description of up to 5 text boxes on the page, e.g.
+ * "textarea | in main | aria-label=Send seller a message". Never includes the box's value.
+ */
+export function describeEditables(doc: Document): Record<string, string | number> {
+  const clip = (s: string | null) => (s ? s.replace(/\s+/g, ' ').slice(0, 40) : '');
+  const els = [...doc.querySelectorAll<HTMLElement>(S.chat.editableProbe)];
+  const out: Record<string, string | number> = { editables: els.length };
+  els.slice(0, 5).forEach((el, i) => {
+    const where = el.closest('[role="dialog"]')
+      ? 'in dialog'
+      : el.closest('[role="main"]')
+        ? 'in main'
+        : 'outside main';
+    const parts = [
+      el.tagName.toLowerCase(),
+      where,
+      el.getAttribute('role') ? `role=${el.getAttribute('role')}` : '',
+      el.getAttribute('contenteditable')
+        ? `contenteditable=${el.getAttribute('contenteditable')}`
+        : '',
+      el.getAttribute('aria-label') ? `aria-label=${clip(el.getAttribute('aria-label'))}` : '',
+      el.getAttribute('placeholder') ? `placeholder=${clip(el.getAttribute('placeholder'))}` : '',
+    ].filter(Boolean);
+    out[`editable_${i + 1}`] = parts.join(' | ');
+  });
+  return out;
+}
+
 export function createMarketplaceAdapter(doc: Document = document): SiteAdapter {
   const win = doc.defaultView ?? window;
   const onFacebook = () => (S.hosts as readonly string[]).includes(win.location.hostname);
@@ -171,6 +200,8 @@ export function createMarketplaceAdapter(doc: Document = document): SiteAdapter 
         chat_container: chatContainer()?.selector ?? 'none',
         chat_rows: readConversation().length,
         compose_box: compose()?.selector ?? 'none',
+        dialogs: doc.querySelectorAll('[role="dialog"]').length,
+        ...describeEditables(doc),
       };
     },
   };

@@ -93,6 +93,42 @@ describe('MarketplaceAdapter on an item page with the chat popup', () => {
   });
 });
 
+describe('MarketplaceAdapter on an item page with the inline "Send seller a message" box', () => {
+  // SYNTHETIC: live check showed no chat popup for a first contact, only an inline box on the
+  // item page. Its exact markup is still unconfirmed; this covers the textarea variant.
+  const inline = `<div role="main">
+    <h1><span dir="auto">Desk lamp</span></h1><div><span dir="auto">$25</span></div>
+    <a href="/marketplace/profile/1/"><span>Sam</span></a>
+    <form><span>Send seller a message</span>
+      <textarea aria-label="Send seller a message" placeholder="Hi, is this available?">Hi, is this available?</textarea>
+      <div role="button" aria-label="Send">Send</div>
+    </form></div>`;
+  beforeEach(() => load('https://www.facebook.com/marketplace/item/777/', inline));
+
+  it('finds and fills the textarea without sending', () => {
+    let sent = false;
+    document.querySelector('form')!.addEventListener('submit', () => (sent = true));
+    document.querySelector('[aria-label="Send"]')!.addEventListener('click', () => (sent = true));
+    const a = createMarketplaceAdapter(document);
+    expect(a.diagnose!().compose_box).toBe('[role="main"] textarea');
+    expect(a.insertMessage('Would you take $20?')).toBe(true);
+    expect(document.querySelector('textarea')!.value).toBe('Would you take $20?');
+    expect(sent).toBe(false);
+  });
+
+  it('describes text boxes structurally without their values', () => {
+    const d = createMarketplaceAdapter(document).diagnose!();
+    expect(d.editables).toBe(1);
+    expect(d.editable_1).toBe(
+      'textarea | in main | aria-label=Send seller a message | placeholder=Hi, is this available?',
+    );
+    document.querySelector('textarea')!.value = 'private draft text';
+    expect(JSON.stringify(createMarketplaceAdapter(document).diagnose!())).not.toContain(
+      'private draft',
+    );
+  });
+});
+
 describe('MarketplaceAdapter on a Messenger thread', () => {
   beforeEach(() =>
     load('https://www.facebook.com/messages/t/555000111/', fixture('thread-page.html')),

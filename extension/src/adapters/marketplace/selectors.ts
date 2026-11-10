@@ -43,11 +43,22 @@ export const MARKETPLACE = {
     ownMessageMarkers: ['You sent', 'You:'],
     /** Link to the listing shown in the chat header. */
     listingLink: ['a[href*="/marketplace/item/"]'],
-    /** The message box. Lexical editor: contenteditable div with role=textbox. */
+    /**
+     * The message box, most specific first:
+     *  1. chat popup / thread: Lexical editor (contenteditable div, role=textbox)
+     *  2. item page "Send seller a message" box for a first contact: unconfirmed type, so both a
+     *     textarea and a labelled textbox are tried (live check showed the Lexical selectors miss it).
+     */
     compose: [
       '[role="dialog"] div[contenteditable="true"][role="textbox"]',
       'div[contenteditable="true"][role="textbox"][aria-label*="essage"]',
+      '[role="main"] textarea',
+      '[role="main"] [role="textbox"]',
+      '[role="main"] input[type="text"][aria-label*="essage"]',
       'div[contenteditable="true"][role="textbox"]',
+      '[role="dialog"] textarea',
     ],
+    /** Anything that could be a text box; listed by the side panel "Page check" for debugging. */
+    editableProbe: 'textarea, input[type="text"], [contenteditable="true"], [role="textbox"]',
   },
 } as const;

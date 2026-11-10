@@ -12,6 +12,7 @@ node node_modules\prettier\bin\prettier.cjs --check . >> %LOG% 2>&1 || (echo FOR
 if "%~1"=="" (echo VERIFIED_NO_COMMIT >> %LOG% & exit /b 0)
 git add -A >> %LOG% 2>&1
 git reset -q -- verify.log
+git diff --cached --quiet && (echo NOTHING_TO_COMMIT >> %LOG% & git log --oneline -n 1 >> %LOG% & echo ALL_OK >> %LOG% & exit /b 0)
 git commit -m "%~1" >> %LOG% 2>&1 || (echo COMMIT_FAIL >> %LOG% & exit /b 1)
 git log --oneline -n 1 >> %LOG% 2>&1
 echo ALL_OK >> %LOG%
