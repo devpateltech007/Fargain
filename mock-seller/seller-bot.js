@@ -22,8 +22,10 @@ export const LISTING = {
 
 /** @param {string} text */
 export function lastAmount(text) {
-  const matches = [...text.matchAll(/\$?\s?(\d{2,4})(?:\.\d{1,2})?(?![\w-])/g)].filter(
-    (m) => !/[\w-]/.test(text[(m.index ?? 0) - 1] ?? ''),
+  // Digits only (no leading "$" or space in the match) so the "previous char" check looks at the
+  // character right before the number: "WH-1000XM5" is skipped, "take 130.00 USD" is not.
+  const matches = [...text.matchAll(/(\d{2,4})(?:\.\d{1,2})?(?![\w-])/g)].filter(
+    (m) => !/[\w.,-]/.test(text[(m.index ?? 0) - 1] ?? ''),
   );
   const last = matches.at(-1);
   return last ? Number(last[1]) : null;

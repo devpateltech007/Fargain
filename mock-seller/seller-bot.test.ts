@@ -28,5 +28,7 @@ describe('scripted seller bot', () => {
   it('lastAmount ignores model numbers', () => {
     expect(lastAmount('Is the WH-1000XM5 ok? Would you take $130?')).toBe(130);
     expect(lastAmount('Is the WH-1000XM5 ok?')).toBeNull();
+    // Regression from the live run: an offer written as "130.00 USD" after a word.
+    expect(lastAmount('Would you take 130.00 USD? I can pay right away.')).toBe(130);
   });
 });

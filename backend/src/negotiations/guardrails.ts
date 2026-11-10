@@ -134,7 +134,49 @@ export type DraftViolation =
   | { code: 'offer_above_max'; detail: string }
   | { code: 'amount_above_max'; detail: string }
   | { code: 'reveals_budget'; detail: string }
-  | { code: 'agrees_off_platform'; detail: string };
+  | { code: 'agrees_off_platform'; detail: string }
+  | { code: 'opening_too_high'; detail: string };
+
+// ---------------------------------------------------------------------------------------------
+// Opening-offer discipline (live test: the model opened at the user's ceiling, leaving no room)
+
+/**
+ * The suggested opening offer may not exceed the asking price, the buyer's target price, or the
+ * max price. Rounded down to whole dollars so it reads naturally.
+ */
+export function clampOpeningOffer(
+  suggested: number,
+  limits: { askingPrice: number | null; targetPrice: number | null; maxPrice: number | null },
+): number {
+  const caps = [suggested, limits.askingPrice, limits.targetPrice, limits.maxPrice].filter(
+    (n): n is number => n !== null && Number.isFinite(n),
+  );
+  return Math.floor(Math.min(...caps));
+}
+
+/** True if any message the buyer actually sent contains a price amount. */
+export function buyerHasOffered(history: { role: string; text: string }[]): boolean {
+  return history.some((m) => m.role === 'buyer_sent' && extractAmounts(m.text).length > 0);
+}
+
+/**
+ * Before the buyer has named any price, the first offer must not exceed the suggested opening.
+ * The opening is always <= max_price, so naming it in retry feedback does not leak the max.
+ */
+export function checkOpeningOffer(input: {
+  proposedOffer: number | null;
+  openingOffer: number;
+  buyerHasOffered: boolean;
+}): DraftViolation[] {
+  if (input.buyerHasOffered || input.proposedOffer === null) return [];
+  if (toCents(input.proposedOffer) <= toCents(input.openingOffer)) return [];
+  return [
+    {
+      code: 'opening_too_high',
+      detail: `This is the first offer: open at or below ${input.openingOffer.toFixed(2)} to leave room to negotiate.`,
+    },
+  ];
+}
 
 const BUDGET_DISCLOSURE =
   /\b(my|our)\s+(budget|max(imum)?|limit|ceiling|cap)\b|\b(max(imum)?|top|highest)\s+(i|we)\s+(can|could|will|would)\b|\bmost\s+(i|we)\s+(can|could|will|would)\s+(pay|spend|do|go)\b|\b(i|we)\s+(can'?t|cannot|won'?t)\s+go\s+(above|over|higher\s+than)\b|\bup\s+to\s+\$?\d/i;

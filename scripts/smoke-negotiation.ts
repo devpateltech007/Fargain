@@ -11,7 +11,21 @@ import { getConfig } from '../backend/src/config.js';
 import { createSellerBot } from '../mock-seller/seller-bot.js';
 
 const env = getConfig();
-const base = env.PUBLIC_BASE_URL.replace(/\/$/, '');
+let base = env.PUBLIC_BASE_URL.replace(/\/$/, '');
+let stopSelfHosted: (() => Promise<void>) | undefined;
+if (process.argv.includes('--self-host')) {
+  // Run the real backend (real .env, real LLM) in this process on a free loopback port,
+  // with a throwaway database.
+  const { buildApp } = await import('../backend/src/app.js');
+  const { openDatabase } = await import('../backend/src/db/index.js');
+  const db = openDatabase(':memory:');
+  const app = await buildApp({ env: { ...env, LOG_LEVEL: 'warn' }, db });
+  base = await app.listen({ port: 0, host: '127.0.0.1' });
+  stopSelfHosted = async () => {
+    await app.close();
+    db.close();
+  };
+}
 const scenario = process.argv.includes('scam') ? 'scam' : 'standard';
 const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 if (env.FARGAIN_API_TOKEN) headers.Authorization = `Bearer ${env.FARGAIN_API_TOKEN}`;
@@ -55,8 +69,9 @@ console.log(`over-max message rejected: ${over.status === 422}`);
 
 const bot = createSellerBot({ scenario });
 const scripted = ['Hi! Is this still available?', 'Would you take $125?', 'How about $145?'];
-for (let turn = 0; turn < scripted.length; turn++) {
-  let text = scripted[turn]!;
+const maxTurns = health.llm_configured ? 5 : scripted.length;
+for (let turn = 0; turn < maxTurns; turn++) {
+  let text = scripted[Math.min(turn, scripted.length - 1)]!;
   if (health.llm_configured) {
     const d = await api('POST', `/api/negotiations/${id}/draft`, {});
     if (d.status !== 200) {
@@ -83,3 +98,5 @@ for (let turn = 0; turn < scripted.length; turn++) {
     break;
   }
 }
+
+await stopSelfHosted?.();

@@ -15,8 +15,8 @@ const assessment = {
   risk_flags: [],
 };
 const draft = (over: Partial<Record<string, unknown>> = {}) => ({
-  draft_message: 'Hi! Would you take $130? I can pick up today.',
-  proposed_offer: 130,
+  draft_message: 'Hi! Would you take $125? I can pick up today.',
+  proposed_offer: 125,
   tone: 'friendly',
   reasoning: 'Opening below fair price.',
   risk_flags: [],
@@ -85,7 +85,7 @@ describe('negotiation guardrails (end to end through the API)', () => {
     expect(r.body).toMatchObject({
       blocked: false,
       violations: [],
-      draft: { proposed_offer: 130 },
+      draft: { proposed_offer: 125 },
       assessment: { fair_price_estimate: 150 },
     });
     expect(r.body.message.role).toBe('buyer_draft');
@@ -117,12 +117,12 @@ describe('negotiation guardrails (end to end through the API)', () => {
       assess: [assessment],
       draft: [
         draft({ draft_message: 'My budget is 150, can you do 140?', proposed_offer: 140 }),
-        draft({ draft_message: 'Could you do $140?', proposed_offer: 140 }),
+        draft({ draft_message: 'Could you do $120?', proposed_offer: 120 }),
       ],
     });
     const r = await t.json('POST', `/api/negotiations/${negId}/draft`, {});
     expect(r.body.blocked).toBe(false);
-    expect(r.body.draft.draft_message).toBe('Could you do $140?');
+    expect(r.body.draft.draft_message).toBe('Could you do $120?');
   });
 
   it('server rejects a user-approved message that exceeds max or reveals the budget', async () => {
@@ -150,8 +150,8 @@ describe('negotiation guardrails (end to end through the API)', () => {
       agree: [{ agreed: false, evidence_quote: '' }],
       draft: [
         draft({
-          draft_message: "I'd rather not use Zelle. Can we do PayPal Goods & Services? $140?",
-          proposed_offer: 140,
+          draft_message: "I'd rather not use Zelle. Can we do PayPal Goods & Services? $120?",
+          proposed_offer: 120,
         }),
       ],
     });
@@ -216,6 +216,47 @@ describe('negotiation guardrails (end to end through the API)', () => {
     const v = await t.json('GET', `/api/negotiations/${negId}`);
     expect(v.body.messages).toHaveLength(1);
     expect(v.body.listing.price).toBe(180);
+  });
+});
+
+describe('opening offer discipline (regression from live run: model opened at the ceiling)', () => {
+  it('clamps the suggested opening to the target price', async () => {
+    const { t, negId } = await setup({
+      assess: [{ ...assessment, suggested_opening_offer: 160 }],
+      draft: [draft({ draft_message: 'Would you take $130?', proposed_offer: 130 })],
+    });
+    const r = await t.json('POST', `/api/negotiations/${negId}/draft`, {});
+    expect(r.body.assessment.suggested_opening_offer).toBe(130); // target_price in setup
+    expect(r.body.blocked).toBe(false);
+  });
+
+  it('retries a first offer above the opening, then blocks it', async () => {
+    const { t, llm, negId } = await setup({
+      assess: [assessment],
+      draft: [
+        draft({ draft_message: 'Would you take $150?', proposed_offer: 150 }),
+        draft({ draft_message: 'Would you take $150?', proposed_offer: 150 }),
+      ],
+    });
+    const r = await t.json('POST', `/api/negotiations/${negId}/draft`, {});
+    expect(r.body.blocked).toBe(true);
+    expect(r.body.violations.map((v: { code: string }) => v.code)).toContain('opening_too_high');
+    expect(JSON.stringify(llm.calls.at(-1))).toContain('open at or below 125.00');
+  });
+
+  it('allows higher offers once the buyer has already named a price', async () => {
+    const { t, negId } = await setup({
+      assess: [assessment],
+      draft: [draft({ draft_message: 'Could you meet me at $140?', proposed_offer: 140 })],
+    });
+    await t.json('POST', `/api/negotiations/${negId}/buyer-message`, {
+      text: 'Would you take $125?',
+    });
+    await t.json('POST', `/api/negotiations/${negId}/seller-message`, {
+      text: 'Could you do $160?',
+    });
+    const r = await t.json('POST', `/api/negotiations/${negId}/draft`, {});
+    expect(r.body.blocked).toBe(false);
   });
 });
 

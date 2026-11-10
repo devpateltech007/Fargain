@@ -20,7 +20,10 @@ import {
   type WishlistItemRow,
 } from '../store.js';
 import {
+  buyerHasOffered,
   checkBuyerMessage,
+  checkOpeningOffer,
+  clampOpeningOffer,
   detectSellerRisks,
   mergeFlags,
   type DraftViolation,
@@ -77,6 +80,7 @@ function feedbackFor(violations: DraftViolation[]): string {
       parts.add(
         'Do not propose or accept payment or contact outside PayPal / the platform; decline it politely.',
       );
+    if (v.code === 'opening_too_high') parts.add(v.detail);
   }
   return [...parts].join(' ');
 }
@@ -95,10 +99,11 @@ export function createNegotiationAgent({ db, userId, currency, llm }: AgentDeps)
       messages,
       jsonSchema: llmJsonSchemas.PriceAssessment,
     });
-    // Server-side clamps (shown to the user only, never sent to the seller).
-    let opening = value.suggested_opening_offer;
-    if (listing.price !== undefined && opening > listing.price) opening = listing.price;
-    if (item.max_price !== null && opening > item.max_price) opening = item.max_price;
+    const opening = clampOpeningOffer(value.suggested_opening_offer, {
+      askingPrice: listing.price ?? null,
+      targetPrice: item.target_price,
+      maxPrice: item.max_price,
+    });
     const assessment: PriceAssessment = {
       ...value,
       suggested_opening_offer: Math.round(opening * 100) / 100,
@@ -153,11 +158,18 @@ export function createNegotiationAgent({ db, userId, currency, llm }: AgentDeps)
       result = out.value;
       model = out.model;
       attempts += out.attempts;
-      violations = checkBuyerMessage({
-        draftMessage: result.draft_message,
-        proposedOffer: result.proposed_offer,
-        maxPrice: item.max_price,
-      });
+      violations = [
+        ...checkBuyerMessage({
+          draftMessage: result.draft_message,
+          proposedOffer: result.proposed_offer,
+          maxPrice: item.max_price,
+        }),
+        ...checkOpeningOffer({
+          proposedOffer: result.proposed_offer,
+          openingOffer: assessment.suggested_opening_offer,
+          buyerHasOffered: buyerHasOffered(history),
+        }),
+      ];
       if (violations.length === 0) break;
       feedback = feedbackFor(violations);
     }
