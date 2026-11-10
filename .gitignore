@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 *.log
+audit.json
 .DS_Store
 
 # Secrets: never commit

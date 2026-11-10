@@ -2,12 +2,56 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Mock Seller (placeholder)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mock Marketplace - Fargain demo</title>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
-    <!-- Phase 2 replaces this with a static page that simulates a Marketplace listing + chat,
-         served by the backend at /mock-seller/. -->
-    <h1>Mock seller page</h1>
-    <p>Placeholder. Implemented in Phase 2.</p>
+  <!-- A static stand-in for a peer-to-peer marketplace listing + chat. The Fargain extension's
+       MockSellerAdapter reads it via the data-testid hooks below. Selectors live in
+       extension/src/adapters/mock-seller/selectors.ts. -->
+  <body data-fargain-site="mock_seller">
+    <header class="topbar">
+      <strong>Mock Marketplace</strong>
+      <span class="badge">Demo site, not a real marketplace</span>
+      <label class="scenario">
+        Scenario
+        <select id="scenario">
+          <option value="standard">Standard seller</option>
+          <option value="scam">Scam seller (off-platform pay)</option>
+        </select>
+      </label>
+      <button id="reset" type="button">Reset demo</button>
+    </header>
+
+    <main class="layout">
+      <section class="listing" data-testid="listing">
+        <img data-testid="listing-image" alt="" />
+        <h1 data-testid="listing-title"></h1>
+        <p class="price" data-testid="listing-price"></p>
+        <p class="meta">
+          <span data-testid="listing-condition"></span> ·
+          <span data-testid="listing-location"></span>
+        </p>
+        <p data-testid="listing-description"></p>
+        <p class="seller">Seller: <span data-testid="seller-name"></span></p>
+      </section>
+
+      <section class="chat" aria-label="Chat with seller">
+        <div class="chat-header">Message <span data-testid="seller-name-chat"></span></div>
+        <ol id="chat-log" data-testid="chat-log" aria-live="polite"></ol>
+        <p id="typing" class="typing" hidden>Seller is typing…</p>
+        <form id="compose-form" class="compose">
+          <textarea
+            id="compose"
+            data-testid="compose"
+            rows="3"
+            placeholder="Write a message…"
+          ></textarea>
+          <button id="send" data-testid="send" type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
   </body>
 </html>

@@ -1,0 +1,150 @@
+body {
+  margin: 0;
+  font:
+    14px/1.4 system-ui,
+    -apple-system,
+    Segoe UI,
+    sans-serif;
+  color: #1c1e21;
+  background: #f6f7f9;
+}
+main {
+  padding: 10px;
+}
+h2,
+h3 {
+  margin: 0 0 6px;
+}
+h3 {
+  font-size: 15px;
+}
+.card {
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: #444;
+}
+input,
+select,
+textarea {
+  font: inherit;
+  padding: 6px;
+  border: 1px solid #ccd0d5;
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+button {
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 0;
+  background: #0866ff;
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button.secondary {
+  background: #e4e6eb;
+  color: #1c1e21;
+}
+button.link {
+  background: none;
+  color: #0866ff;
+  padding: 0;
+}
+blockquote {
+  margin: 0;
+  padding: 8px;
+  background: #eef4ff;
+  border-left: 3px solid #0866ff;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+.muted {
+  color: #65676b;
+}
+.small {
+  font-size: 12px;
+}
+.error {
+  color: #b42318;
+  background: #fef3f2;
+  padding: 6px;
+  border-radius: 6px;
+}
+.warn {
+  color: #8a5a00;
+  background: #fff8e6;
+  padding: 6px;
+  border-radius: 6px;
+}
+.ok {
+  color: #05603a;
+  background: #ecfdf3;
+  padding: 6px;
+  border-radius: 6px;
+}
+.flags {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.flag {
+  display: flex;
+  flex-direction: column;
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  border-radius: 6px;
+  padding: 6px;
+  font-size: 12px;
+}
+.flag strong {
+  text-transform: capitalize;
+  color: #b42318;
+}
+.status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e4e6eb;
+}
+.status-agreed {
+  background: #fff8e6;
+}
+.status-paid {
+  background: #ecfdf3;
+}
+.log {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.log-buyer_draft {
+  color: #888;
+}

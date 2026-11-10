@@ -1,0 +1,127 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    sans-serif;
+  background: #f0f2f5;
+  color: #1c1e21;
+}
+.topbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 20px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+}
+.badge {
+  font-size: 12px;
+  background: #fff3cd;
+  border: 1px solid #f0d27a;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.scenario {
+  margin-left: auto;
+  font-size: 14px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 420px);
+  gap: 20px;
+  padding: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.listing,
+.chat {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+}
+.listing img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: #e9ebee;
+  border-radius: 6px;
+}
+.price {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 4px 0;
+}
+.meta,
+.seller {
+  color: #65676b;
+}
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px);
+}
+.chat-header {
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+#chat-log {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 16px;
+}
+.msg p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.msg-buyer {
+  align-self: flex-end;
+  background: #0866ff;
+  color: #fff;
+}
+.msg-seller {
+  align-self: flex-start;
+  background: #e4e6eb;
+}
+.typing {
+  color: #65676b;
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+.compose {
+  display: flex;
+  gap: 8px;
+}
+.compose textarea {
+  flex: 1;
+  resize: none;
+  border-radius: 8px;
+  border: 1px solid #ccd0d5;
+  padding: 8px;
+  font: inherit;
+}
+.compose button {
+  background: #0866ff;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 600;
+  cursor: pointer;
+}

@@ -1,4 +1,9 @@
-import type { NegotiationStatus, WishlistSource, WishlistStatus } from '@fargain/shared';
+import type {
+  MessageRole,
+  NegotiationStatus,
+  WishlistSource,
+  WishlistStatus,
+} from '@fargain/shared';
 import type { Db } from './db/index.js';
 
 // Row types mirror the SQLite schema (backend/src/db/migrations.ts).
@@ -26,8 +31,19 @@ export interface NegotiationRow {
   seller_label: string | null;
   status: NegotiationStatus;
   agreed_price: number | null;
+  listing_json: string;
+  assessment_json: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MessageRow {
+  id: number;
+  negotiation_id: number;
+  role: MessageRole;
+  text: string;
+  created_at: string;
+  ai_reasoning_json: string | null;
 }
 
 export interface PaymentRow {
@@ -81,4 +97,28 @@ export function getPayment(db: Db, userId: number, id: number): PaymentRow | und
 export function getPaymentByOrderId(db: Db, orderId: string): PaymentRow | undefined {
   return db.prepare('SELECT * FROM payments WHERE paypal_order_id = ?').get(orderId) as
     PaymentRow | undefined;
+}
+
+export function listMessages(db: Db, negotiationId: number): MessageRow[] {
+  return db
+    .prepare('SELECT * FROM messages WHERE negotiation_id = ? ORDER BY id')
+    .all(negotiationId) as MessageRow[];
+}
+
+export function insertMessage(
+  db: Db,
+  negotiationId: number,
+  role: MessageRole,
+  text: string,
+  reasoning?: unknown,
+): MessageRow {
+  const id = Number(
+    db
+      .prepare(
+        'INSERT INTO messages (negotiation_id, role, text, ai_reasoning_json) VALUES (?, ?, ?, ?)',
+      )
+      .run(negotiationId, role, text, reasoning === undefined ? null : JSON.stringify(reasoning))
+      .lastInsertRowid,
+  );
+  return db.prepare('SELECT * FROM messages WHERE id = ?').get(id) as MessageRow;
 }

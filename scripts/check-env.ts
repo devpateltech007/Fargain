@@ -15,6 +15,7 @@ import {
   type Env,
   type Feature,
 } from '../backend/src/config.js';
+import { ANTHROPIC_VERSION } from '../backend/src/llm/anthropic.js';
 
 const live = process.argv.includes('--live');
 const loaded = loadDotEnv();
@@ -77,7 +78,7 @@ await check('paypal', missingFor(env, 'paypal').length === 0, async () => {
 
 await check('anthropic', env.ANTHROPIC_API_KEY !== undefined, async () => {
   const res = await fetch('https://api.anthropic.com/v1/models?limit=100', {
-    headers: { 'x-api-key': env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01' },
+    headers: { 'x-api-key': env.ANTHROPIC_API_KEY!, 'anthropic-version': ANTHROPIC_VERSION },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} from /v1/models`);
   const ids = ((await res.json()) as { data: { id: string }[] }).data.map((m) => m.id);

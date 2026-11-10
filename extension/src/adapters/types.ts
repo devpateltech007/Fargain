@@ -13,6 +13,7 @@ export interface Listing {
   currency?: string;
   sellerLabel?: string;
   imageUrl?: string;
+  description?: string;
   /** Free-form extra facts (condition, location, ASIN...) the adapter could read. */
   attributes?: Record<string, string>;
 }

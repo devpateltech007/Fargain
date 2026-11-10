@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
 import { MissingConfigError } from '../config.js';
+import { LlmError } from '../llm/provider.js';
 import { PayPalError } from '../payments/paypal-client.js';
 
 export class ApiError extends Error {
@@ -36,6 +37,10 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (err instanceof MissingConfigError) {
       req.log.warn({ feature: err.feature, missing: err.missing }, 'feature not configured');
       return reply.status(503).send({ error: { code: 'not_configured', message: err.message } });
+    }
+    if (err instanceof LlmError) {
+      req.log.error({ code: err.code, status: err.status, msg: err.message }, 'llm error');
+      return reply.status(502).send({ error: { code: err.code, message: err.message } });
     }
     if (err instanceof PayPalError) {
       req.log.error(

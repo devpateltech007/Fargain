@@ -49,6 +49,15 @@ Verified so far:
   `{ products[], next_page_token }`, each product has `offers[]` with `domain`, `price.amount`,
   `price.currency`, `availability`, `url`. `GET /v1/products/{id}` is free (use for price watch).
 - Anthropic: model IDs are not hard-coded; `npm run check-env:live` lists them via `GET /v1/models`.
+  Current API version header is `anthropic-version: 2026-10-21`, which REJECTS `temperature`,
+  `top_p` and `top_k` (400). Structured JSON uses `output_config.format = {type:"json_schema",
+schema}` and arrives in a `text` block. Forced tool use (`tool_choice` any/tool) returns 400 on
+  Opus 5.5 / Sonnet 5.5, so we do not use tools for structured output. The schema subset rejects
+  `minimum/maximum/minLength/maxLength/multipleOf`, `minItems > 1`, and requires
+  `additionalProperties: false`; `toStructuredOutputSchema()` in `shared/src/llm.ts` converts
+  zod JSON Schemas (zod still validates the full constraints). Assistant prefill is incompatible
+  with JSON outputs, so the one retry is a new user turn. Fields asking for step-by-step reasoning
+  can trigger a refusal, so `reasoning` is described as a short explanation.
 - PayPal Orders v2 (sandbox, verified live with `npm run probe:paypal` and `npm run e2e:paypal`):
   creating an order with `payment_source.paypal.experience_context` returns status
   `PAYER_ACTION_REQUIRED` and a `payer-action` link (not `approve`); repeating a
@@ -60,6 +69,17 @@ Verified so far:
 - Meta: the provided `IG_ACCESS_TOKEN` is a Facebook Graph system-user token (graph.facebook.com),
   not an Instagram Login token, and currently sees 0 Pages. Phase 5 therefore uses the
   Facebook-Login (Page-linked) Instagram messaging flavor. `npm run probe:meta` re-checks this.
+
+## Negotiation guardrails (backend/src/negotiations)
+
+- `prompts.ts` builders never receive `max_price`; a test asserts no rendering of it reaches the LLM.
+- `guardrails.ts` checks every draft AND every user-approved message (`POST .../buyer-message`)
+  for amounts above max (in cents), budget-disclosure phrasing, and proposing off-platform
+  payment. Over-limit drafts get one retry with non-revealing feedback, then are returned as
+  `blocked` with `needs_user_input`; the side panel cannot insert blocked drafts.
+- Seller messages are scanned deterministically for off-platform payment, scams, and budget
+  probes; LLM flags are merged in, never substituted.
+- Agreement detection is a suggestion only; the user must confirm the price (`confirm-price`).
 
 ## Stack and layout
 

@@ -9,7 +9,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['{shared,backend,extension,dashboard,scripts}/**/*.test.{ts,tsx}'],
+    include: ['{shared,backend,extension,dashboard,scripts,mock-seller}/**/*.test.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**'],
     environment: 'node',
   },

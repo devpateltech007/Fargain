@@ -84,6 +84,25 @@ describe('LLM contracts', () => {
       expect(schema).toHaveProperty('type', 'object');
     }
   });
+
+  it('JSON schemas contain only keywords Anthropic structured outputs accept', () => {
+    const banned =
+      /"(minimum|maximum|exclusiveMinimum|exclusiveMaximum|multipleOf|minLength|maxLength|maxItems|\$schema)"/;
+    const walk = (n: unknown): void => {
+      if (Array.isArray(n)) return n.forEach(walk);
+      if (!n || typeof n !== 'object') return;
+      const o = n as Record<string, unknown>;
+      if (o.type === 'object') expect(o.additionalProperties).toBe(false);
+      if (typeof o.minItems === 'number') expect(o.minItems).toBeLessThanOrEqual(1);
+      Object.values(o).forEach(walk);
+    };
+    for (const schema of Object.values(llmJsonSchemas)) {
+      expect(JSON.stringify(schema)).not.toMatch(banned);
+      walk(schema);
+    }
+    // Constraints are preserved as hints in the description.
+    expect(JSON.stringify(llmJsonSchemas.PriceAssessment)).toContain('{minimum: 0, maximum: 1}');
+  });
 });
 
 describe('domain', () => {

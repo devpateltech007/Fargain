@@ -38,15 +38,51 @@ export const UpdateWishlistItemBody = z
   .refine((b) => Object.keys(b).length > 0, { message: 'at least one field is required' });
 export type UpdateWishlistItemBody = z.infer<typeof UpdateWishlistItemBody>;
 
+/** Listing facts the extension adapter read from the page. All optional; stored on the negotiation. */
+export const ListingInfo = z
+  .object({
+    title: z.string().trim().min(1).max(300).optional(),
+    price: Price.optional(),
+    currency: z
+      .string()
+      .regex(/^[A-Z]{3}$/)
+      .optional(),
+    description: z.string().max(5000).optional(),
+    attributes: z.record(z.string().max(100), z.string().max(500)).optional(),
+  })
+  .strict();
+export type ListingInfo = z.infer<typeof ListingInfo>;
+
 export const CreateNegotiationBody = z
   .object({
     item_id: z.number().int().positive(),
     platform: Platform,
     listing_url: optionalUrl,
     seller_label: z.string().max(200).optional(),
+    listing: ListingInfo.optional(),
   })
   .strict();
 export type CreateNegotiationBody = z.infer<typeof CreateNegotiationBody>;
+
+export const DraftRequestBody = z
+  .object({
+    /** Optional steer from the user, e.g. "be firmer" or "ask about battery health". */
+    instructions: z.string().max(500).optional(),
+  })
+  .strict();
+export type DraftRequestBody = z.infer<typeof DraftRequestBody>;
+
+export const SellerMessageBody = z.object({ text: z.string().trim().min(1).max(4000) }).strict();
+export type SellerMessageBody = z.infer<typeof SellerMessageBody>;
+
+/** The user approved (possibly edited) text. Recorded before the extension inserts it into the page. */
+export const BuyerMessageBody = z
+  .object({
+    text: z.string().trim().min(1).max(4000),
+    draft_message_id: z.number().int().positive().optional(),
+  })
+  .strict();
+export type BuyerMessageBody = z.infer<typeof BuyerMessageBody>;
 
 export const ConfirmPriceBody = z
   .object({

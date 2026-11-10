@@ -91,4 +91,9 @@ export const migrations: string[] = [
   );
   CREATE INDEX idx_audit_user ON audit_log(user_id, created_at);
   `,
+  /* 2: listing facts + cached price assessment on negotiations */ `
+  ALTER TABLE negotiations ADD COLUMN listing_json TEXT NOT NULL DEFAULT '{}';
+  ALTER TABLE negotiations ADD COLUMN assessment_json TEXT;
+  CREATE INDEX idx_negotiations_listing ON negotiations(listing_url);
+  `,
 ];
