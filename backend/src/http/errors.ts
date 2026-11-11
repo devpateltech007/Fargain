@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { MissingConfigError } from '../config.js';
 import { LlmError } from '../llm/provider.js';
 import { PayPalError } from '../payments/paypal-client.js';
+import { Channel3Error } from '../pricing/channel3.js';
 
 export class ApiError extends Error {
   constructor(
@@ -41,6 +42,10 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (err instanceof LlmError) {
       req.log.error({ code: err.code, status: err.status, msg: err.message }, 'llm error');
       return reply.status(502).send({ error: { code: err.code, message: err.message } });
+    }
+    if (err instanceof Channel3Error) {
+      req.log.error({ status: err.status }, 'channel3 error');
+      return reply.status(502).send({ error: { code: 'channel3_error', message: err.message } });
     }
     if (err instanceof PayPalError) {
       req.log.error(

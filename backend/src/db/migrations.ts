@@ -96,4 +96,40 @@ export const migrations: string[] = [
   ALTER TABLE negotiations ADD COLUMN assessment_json TEXT;
   CREATE INDEX idx_negotiations_listing ON negotiations(listing_url);
   `,
+  /* 3: Channel3 product links for price watch + price-drop alerts */ `
+  ALTER TABLE wishlist_items ADD COLUMN channel3_product_ids TEXT NOT NULL DEFAULT '[]';
+  CREATE TABLE alerts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_id     INTEGER NOT NULL REFERENCES wishlist_items(id) ON DELETE CASCADE,
+    kind        TEXT NOT NULL CHECK (kind IN ('price_drop')),
+    price       REAL NOT NULL CHECK (price >= 0),
+    retailer    TEXT,
+    url         TEXT,
+    detail_json TEXT NOT NULL DEFAULT '{}',
+    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    seen_at     TEXT
+  );
+  CREATE INDEX idx_alerts_user ON alerts(user_id, created_at);
+  `,
+  /* 4: Reel Mode: DM conversation state + webhook de-duplication */ `
+  CREATE TABLE reel_sessions (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    ig_sender_id    TEXT,
+    channel         TEXT NOT NULL CHECK (channel IN ('instagram_dm','dashboard')),
+    status          TEXT NOT NULL CHECK (status IN ('awaiting_confirmation','awaiting_screenshot','added','failed')),
+    source_url      TEXT,
+    caption         TEXT,
+    candidates_json TEXT NOT NULL DEFAULT '[]',
+    item_id         INTEGER REFERENCES wishlist_items(id) ON DELETE SET NULL,
+    created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    updated_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  );
+  CREATE INDEX idx_reel_sessions_sender ON reel_sessions(ig_sender_id, status);
+  CREATE TABLE processed_webhook_messages (
+    mid         TEXT PRIMARY KEY,
+    received_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  );
+  `,
 ];

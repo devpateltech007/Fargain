@@ -4,5 +4,5 @@
     "outDir": "dist",
     "rootDir": "src"
   },
-  "exclude": ["src/**/*.test.ts", "src/test-utils.ts"]
+  "exclude": ["src/**/*.test.ts", "src/test-utils.ts", "src/pricing/fixtures.ts"]
 }

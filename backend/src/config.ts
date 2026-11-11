@@ -42,11 +42,18 @@ export const EnvSchema = z.object({
     .default('USD'),
 
   CHANNEL3_API_KEY: optionalString,
+  /** Price watch job interval. 0 disables the job (manual refresh and the dev helper still work). */
+  PRICE_WATCH_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(360),
 
   IG_APP_SECRET: optionalString,
   IG_VERIFY_TOKEN: optionalString,
   IG_ACCESS_TOKEN: optionalString,
   IG_ACCOUNT_ID: optionalString,
+  /** Graph API version for Instagram messaging calls. Not hard-wired so it can follow Meta's releases. */
+  META_GRAPH_VERSION: z
+    .string()
+    .regex(/^v\d+\.\d+$/)
+    .default('v25.0'),
 });
 export type Env = z.infer<typeof EnvSchema>;
 
@@ -72,6 +79,10 @@ export const FEATURE_REQUIREMENTS = {
   paypalWebhook: ['PAYPAL_WEBHOOK_ID'],
   channel3: ['CHANNEL3_API_KEY'],
   instagram: ['IG_APP_SECRET', 'IG_VERIFY_TOKEN', 'IG_ACCESS_TOKEN', 'IG_ACCOUNT_ID'],
+  /** Receiving webhooks: verify handshake + check signatures. */
+  instagramWebhook: ['IG_APP_SECRET', 'IG_VERIFY_TOKEN'],
+  /** Replying in the DM (Page access token with instagram_manage_messages). */
+  instagramSend: ['IG_ACCESS_TOKEN'],
 } as const satisfies Record<string, readonly (keyof Env)[]>;
 export type Feature = keyof typeof FEATURE_REQUIREMENTS;
 

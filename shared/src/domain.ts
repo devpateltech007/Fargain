@@ -27,6 +27,22 @@ export const UserProfile = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'birthday must be YYYY-MM-DD')
     .optional(),
   memberships: z.array(z.string().min(1)).default([]),
+  /**
+   * Discounts the user knows they have, entered manually (no retailer logins, no email scanning).
+   * Fargain never invents discount rates; only these are stacked onto prices.
+   */
+  discounts: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1).max(60),
+        percent: z.number().gt(0).max(90),
+        /** Retailer domains this applies to (e.g. "amazon.com"); empty = any retailer. */
+        domains: z.array(z.string().trim().toLowerCase().min(3).max(100)).max(20).default([]),
+        requires: z.enum(['none', 'student', 'birthday_month']).default('none'),
+      }),
+    )
+    .max(20)
+    .default([]),
 });
 export type UserProfile = z.infer<typeof UserProfile>;
 

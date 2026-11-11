@@ -103,6 +103,34 @@ export const CreatePaymentBody = z
   .strict();
 export type CreatePaymentBody = z.infer<typeof CreatePaymentBody>;
 
+export const PricingLookupBody = z
+  .object({
+    /** Short search text, used as-is (e.g. "Sony WH-1000XM5"). */
+    query: z.string().trim().min(2).max(300).optional(),
+    /** Raw page title (e.g. a long Amazon title). The backend derives a short query from it. */
+    product_title: z.string().trim().min(2).max(500).optional(),
+    brand: z.string().trim().max(100).optional(),
+    /** Link the matched Channel3 products to this wishlist item and record price snapshots. */
+    item_id: z.number().int().positive().optional(),
+    /** Price on the page the user is looking at (e.g. Amazon), for "you could save" math. */
+    current_price: Price.optional(),
+    current_retailer: z.string().trim().toLowerCase().max(100).optional(),
+  })
+  .strict()
+  .refine(
+    (b) => b.query !== undefined || b.product_title !== undefined || b.item_id !== undefined,
+    { message: 'query, product_title or item_id is required' },
+  );
+export type PricingLookupBody = z.infer<typeof PricingLookupBody>;
+
+export const SimulatePriceDropBody = z
+  .object({
+    /** New price. Defaults to 15% below the current lowest price (or the target price if lower). */
+    price: Price.refine((n) => n > 0, 'must be > 0').optional(),
+  })
+  .strict();
+export type SimulatePriceDropBody = z.infer<typeof SimulatePriceDropBody>;
+
 /** Machine-readable reasons a payment request is refused. */
 export const PaymentRejectionCode = z.enum([
   'exceeds_max_price',

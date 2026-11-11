@@ -1,10 +1,15 @@
+import { createAmazonAdapter } from '../adapters/amazon/adapter';
 import { createMarketplaceAdapter } from '../adapters/marketplace/adapter';
 import { createMockSellerAdapter } from '../adapters/mock-seller/adapter';
 import type { SiteAdapter } from '../adapters/types';
 import type { ContentRequest, ContentResponse, PageChangedEvent } from '../messaging';
 
-// Adapter registry. The Amazon adapter is added in Phase 4.
-const adapters: SiteAdapter[] = [createMockSellerAdapter(), createMarketplaceAdapter()];
+// Adapter registry. Each adapter's detect() checks its own host, so only one can be active.
+const adapters: SiteAdapter[] = [
+  createMockSellerAdapter(),
+  createMarketplaceAdapter(),
+  createAmazonAdapter(),
+];
 
 /** Re-evaluated on every request: SPAs (Facebook) change pages without reloading the script. */
 const active = (): SiteAdapter | null => adapters.find((a) => a.detect()) ?? null;

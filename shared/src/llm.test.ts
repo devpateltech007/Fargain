@@ -118,7 +118,8 @@ describe('domain', () => {
   });
 
   it('UserProfile applies defaults and validates birthday', () => {
-    expect(UserProfile.parse({})).toEqual({ student: false, memberships: [] });
+    expect(UserProfile.parse({})).toEqual({ student: false, memberships: [], discounts: [] });
+    expect(UserProfile.safeParse({ discounts: [{ label: 'x', percent: 95 }] }).success).toBe(false);
     expect(UserProfile.safeParse({ birthday: '03/04/2000' }).success).toBe(false);
   });
 });

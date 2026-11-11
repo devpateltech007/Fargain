@@ -61,11 +61,14 @@ describe('database', () => {
       .all()
       .map((r) => (r as { name: string }).name);
     expect(tables).toEqual([
+      'alerts',
       'audit_log',
       'messages',
       'negotiations',
       'payments',
       'price_snapshots',
+      'processed_webhook_messages',
+      'reel_sessions',
       'users',
       'wishlist_items',
     ]);
@@ -88,6 +91,26 @@ describe('database', () => {
 });
 
 describe('app', () => {
+  it('accepts an empty JSON body and rejects malformed JSON with 400', async () => {
+    const t = await startTestApp();
+    try {
+      const h = {
+        Authorization: 'Bearer test-token-0123456789',
+        'Content-Type': 'application/json',
+      };
+      const empty = await t.request('/api/negotiations/1/draft', {
+        method: 'POST',
+        headers: h,
+        body: '',
+      });
+      expect(empty.status).toBe(404); // reached the route (no such negotiation), not a parse error
+      const bad = await t.request('/api/wishlist', { method: 'POST', headers: h, body: '{oops' });
+      expect(bad.status).toBe(400);
+    } finally {
+      await t.close();
+    }
+  });
+
   it('serves /api/health', async () => {
     const t = await startTestApp();
     try {

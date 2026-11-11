@@ -14,6 +14,9 @@ import {
   type Settings,
   type WishlistItem,
 } from './api';
+import { Alerts } from './Alerts';
+import { AmazonView } from './AmazonView';
+import { ProfileForm } from './ProfileForm';
 import { getPageContext, insertIntoPage } from './tab';
 
 const money = (n: number | null | undefined) =>
@@ -184,6 +187,8 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
         Your agent drafts. You approve and press send. PayPal sandbox only.
       </p>
       {error && <p className="error">{error}</p>}
+      <Alerts api={api} />
+      <ProfileForm api={api} />
       {!llmReady && (
         <p className="warn">
           LLM not configured on the backend: drafting and agreement detection are off.
@@ -219,10 +224,11 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
           </div>
         </section>
       )}
-      {ctx?.listing && !neg && (
+      {ctx?.site === 'amazon' && ctx.listing && <AmazonView api={api} ctx={ctx} />}
+      {ctx?.listing && ctx.site !== 'amazon' && !neg && (
         <StartNegotiation api={api} ctx={ctx} onStarted={setNeg} run={run} busy={busy} />
       )}
-      {neg && ctx && (
+      {neg && ctx && ctx.site !== 'amazon' && (
         <Negotiation
           api={api}
           neg={neg}

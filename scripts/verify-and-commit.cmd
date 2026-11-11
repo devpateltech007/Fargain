@@ -7,6 +7,10 @@ echo start > %LOG%
 node node_modules\vite\bin\vite.js build extension >> %LOG% 2>&1 || (echo EXT_BUILD_FAIL >> %LOG% & exit /b 1)
 node node_modules\vite\bin\vite.js build extension -c extension\vite.content.config.ts >> %LOG% 2>&1 || (echo CONTENT_BUILD_FAIL >> %LOG% & exit /b 1)
 node node_modules\vitest\vitest.mjs run --no-color >> %LOG% 2>&1 || (echo TEST_FAIL >> %LOG% & exit /b 1)
+node node_modules\typescript\bin\tsc -p shared\tsconfig.build.json >> %LOG% 2>&1 || (echo SHARED_BUILD_FAIL >> %LOG% & exit /b 1)
+for %%d in (shared backend dashboard extension scripts) do (
+  node node_modules\typescript\bin\tsc -p %%d\tsconfig.json --noEmit >> %LOG% 2>&1 || (echo TYPECHECK_FAIL_%%d >> %LOG% & exit /b 1)
+)
 node node_modules\eslint\bin\eslint.js . >> %LOG% 2>&1 || (echo LINT_FAIL >> %LOG% & exit /b 1)
 node node_modules\prettier\bin\prettier.cjs --check . >> %LOG% 2>&1 || (echo FORMAT_FAIL >> %LOG% & exit /b 1)
 if "%~1"=="" (echo VERIFIED_NO_COMMIT >> %LOG% & exit /b 0)

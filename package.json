@@ -31,7 +31,9 @@
     "probe:paypal": "tsx scripts/probe-paypal-orders.ts",
     "probe:meta": "tsx scripts/probe-meta-token.ts",
     "e2e:paypal": "tsx scripts/paypal-e2e.ts",
-    "smoke:negotiation": "tsx scripts/smoke-negotiation.ts"
+    "smoke:negotiation": "tsx scripts/smoke-negotiation.ts",
+    "smoke:pricing": "tsx scripts/smoke-pricing.ts",
+    "probe:channel3": "tsx scripts/probe-channel3.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

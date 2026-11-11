@@ -19,6 +19,8 @@ export interface WishlistItemRow {
   target_price: number | null;
   max_price: number | null;
   status: WishlistStatus;
+  /** JSON array of Channel3 product ids matched to this item (used by the price watch). */
+  channel3_product_ids: string;
   created_at: string;
   updated_at: string;
 }

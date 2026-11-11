@@ -30,6 +30,7 @@ export class ApiRequestError extends Error {
 export interface WishlistItem {
   id: number;
   title: string;
+  source_url?: string | null;
   target_price: number | null;
   max_price: number | null;
   status: string;
@@ -83,6 +84,69 @@ export interface PaymentView {
   status: string;
   approve_url: string | null;
   paypal_order_id: string | null;
+}
+
+export interface OfferView {
+  domain: string;
+  price: number;
+  compare_at_price: number | null;
+  url: string | null;
+  excluded: string | null;
+}
+
+export interface DiscountedView {
+  domain?: string;
+  base_price: number;
+  final_price: number;
+  applied: { label: string; percent: number; savings: number }[];
+  skipped: { label: string; reason: string }[];
+}
+
+export interface PricingLookupView {
+  query: string;
+  query_source: string;
+  matched_products: { id: string; title: string; brand: string | null; image_url: string | null }[];
+  offers: OfferView[];
+  best_offer: OfferView | null;
+  fair_price: number | null;
+  offer_count_used: number;
+  alternatives: {
+    product_id: string;
+    title: string;
+    lowest_price: number;
+    domain: string;
+    url: string | null;
+  }[];
+  discounts: {
+    profile_discounts: number;
+    offers: DiscountedView[];
+    best_after_discounts: DiscountedView | null;
+  };
+  current: (DiscountedView & { price: number; retailer: string | null }) | null;
+  savings_vs_current: number | null;
+}
+
+export interface AlertView {
+  id: number;
+  item_id: number;
+  item_title?: string;
+  price: number;
+  retailer: string | null;
+  url: string | null;
+  created_at: string;
+  detail: { source?: string; previous_low?: number | null; target_price?: number | null };
+}
+
+export interface ProfileView {
+  student: boolean;
+  birthday?: string;
+  memberships: string[];
+  discounts: {
+    label: string;
+    percent: number;
+    domains: string[];
+    requires: 'none' | 'student' | 'birthday_month';
+  }[];
 }
 
 export function createApi(settings: Settings) {
@@ -144,6 +208,29 @@ export function createApi(settings: Settings) {
     createPayment: (negotiation_id: number, amount: number) =>
       call<PaymentView>('POST', '/api/payments/create', { negotiation_id, amount }),
     payment: (id: number) => call<PaymentView>('GET', `/api/payments/${id}`),
+    pricingLookup: (b: {
+      query?: string;
+      product_title?: string;
+      brand?: string;
+      item_id?: number;
+      current_price?: number;
+      current_retailer?: string;
+    }) => call<PricingLookupView>('POST', '/api/pricing/lookup', b),
+    alerts: (unseen = true) => call<{ alerts: AlertView[] }>('GET', `/api/alerts?unseen=${unseen}`),
+    markAlertSeen: async (id: number) => {
+      await fetch(`${settings.backendUrl.replace(/\/$/, '')}/api/alerts/${id}/seen`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${settings.apiToken}` },
+      });
+    },
+    profile: () => call<{ profile: ProfileView }>('GET', '/api/profile'),
+    saveProfile: (p: ProfileView) => call<{ profile: ProfileView }>('PUT', '/api/profile', p),
+    simulateDrop: (itemId: number) =>
+      call<{ simulated: true; alert: AlertView }>(
+        'POST',
+        `/api/dev/simulate-price-drop/${itemId}`,
+        {},
+      ),
   };
 }
 

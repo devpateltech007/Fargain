@@ -10,6 +10,10 @@ import type { LlmProvider } from './llm/provider.js';
 import { negotiationRoutes } from './negotiations/routes.js';
 import { createPayPalClient, type PayPalApi } from './payments/paypal-client.js';
 import { paymentRoutes } from './payments/routes.js';
+import { createChannel3Client, type Channel3Api } from './pricing/channel3.js';
+import { pricingRoutes } from './pricing/routes.js';
+import type { Messenger } from './reels/messenger.js';
+import { reelRoutes } from './reels/routes.js';
 import { ensureDefaultUser } from './users.js';
 import { wishlistRoutes } from './wishlist/routes.js';
 
@@ -20,6 +24,10 @@ export interface BuildAppOptions {
   paypal?: PayPalApi;
   /** Override the LLM provider (tests). Defaults to Anthropic built from env. */
   llm?: LlmProvider;
+  /** Override the Channel3 client (tests). Defaults to the real client built from env. */
+  channel3?: Channel3Api;
+  /** Override the Instagram DM sender (tests). Defaults to the Send API built from env. */
+  messenger?: Messenger;
 }
 
 export interface AppDeps {
@@ -32,6 +40,10 @@ export interface AppDeps {
   /** Returns the LLM provider or throws MissingConfigError (-> HTTP 503). */
   llm: () => LlmProvider;
   llmConfigured: boolean;
+  /** Returns the Channel3 client or throws MissingConfigError (-> HTTP 503). */
+  channel3: () => Channel3Api;
+  /** Test override for Instagram replies; undefined means "build from env if configured". */
+  messenger?: Messenger;
 }
 
 export async function buildApp({
@@ -39,6 +51,8 @@ export async function buildApp({
   db,
   paypal,
   llm,
+  channel3,
+  messenger,
 }: BuildAppOptions): Promise<FastifyInstance> {
   assertAuthConfigured(env);
 
@@ -60,6 +74,7 @@ export async function buildApp({
 
   let paypalClient = paypal;
   let llmProvider = llm;
+  let channel3Client = channel3;
   const deps: AppDeps = {
     env,
     db,
@@ -83,11 +98,34 @@ export async function buildApp({
       return llmProvider;
     },
     llmConfigured: llm !== undefined || missingFor(env, 'llm').length === 0,
+    channel3: () => {
+      if (!channel3Client) {
+        requireFeature(env, 'channel3');
+        channel3Client = createChannel3Client(env.CHANNEL3_API_KEY!);
+      }
+      return channel3Client;
+    },
+    messenger,
   };
   app.decorate('deps', deps);
 
   registerErrorHandler(app);
   registerAuth(app, env);
+
+  // Treat an empty body with Content-Type: application/json as "no body" (Postman/curl send this
+  // for action endpoints like POST /api/pricing/refresh). Invalid JSON is still a 400.
+  app.removeContentTypeParser('application/json');
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (_req, body, done) => {
+    const text = typeof body === 'string' ? body : body.toString('utf8');
+    if (text.trim() === '') return done(null, undefined);
+    try {
+      done(null, JSON.parse(text));
+    } catch {
+      const err = new Error('request body is not valid JSON') as Error & { statusCode: number };
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
 
   app.get('/api/health', async () => ({
     ok: true,
@@ -99,6 +137,8 @@ export async function buildApp({
   await app.register(wishlistRoutes);
   await app.register(negotiationRoutes);
   await app.register(paymentRoutes);
+  await app.register(pricingRoutes);
+  await app.register(reelRoutes);
 
   // Static mock seller page (a stand-in "third-party" marketplace chat for repeatable demos).
   await app.register(fastifyStatic, {

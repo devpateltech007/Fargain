@@ -48,6 +48,14 @@ Verified so far:
   `query` / `image_url` / `base64_image` / `page_token`, `limit` (default 20, max 30); response
   `{ products[], next_page_token }`, each product has `offers[]` with `domain`, `price.amount`,
   `price.currency`, `availability`, `url`. `GET /v1/products/{id}` is free (use for price watch).
+- Channel3 LIVE shape differs from the docs example (verified with `npm run probe:channel3`):
+  offer price is `price.price` (+ `compare_at_price`, `currency`), brand is `brands[{id,name}]`,
+  and one physical product often appears as several Channel3 products with one offer each.
+  Searches return near misses (AirPods Max for "AirPods Pro 2"), implausible offers ($10 Air
+  Force 1) and .ca stores priced in USD. `backend/src/pricing/compare.ts` pools offers across
+  exact matches (every query token in the title), and excludes non-US, used/refurbished,
+  out-of-stock and < 40%-of-median offers from best/fair price (still shown, with a reason).
+  `npm run smoke:pricing` re-checks everything live.
 - Anthropic: model IDs are not hard-coded; `npm run check-env:live` lists them via `GET /v1/models`.
   Current API version header is `anthropic-version: 2026-10-21`, which REJECTS `temperature`,
   `top_p` and `top_k` (400). Structured JSON uses `output_config.format = {type:"json_schema",
