@@ -203,6 +203,16 @@ export function createApi(settings: Settings) {
         text,
         ...(draftId ? { draft_message_id: draftId } : {}),
       }),
+    agentMessage: (id: number, text: string, draftId?: number) =>
+      call<{ message: MessageView }>('POST', `/api/negotiations/${id}/agent-message`, {
+        text,
+        ...(draftId ? { draft_message_id: draftId } : {}),
+      }),
+    validateAgentMessage: (id: number, text: string, draftId: number) =>
+      call<{ validated: true }>('POST', `/api/negotiations/${id}/agent-message/validate`, {
+        text,
+        draft_message_id: draftId,
+      }),
     confirmPrice: (id: number, agreed_price: number) =>
       call<NegotiationView>('POST', `/api/negotiations/${id}/confirm-price`, { agreed_price }),
     createPayment: (negotiation_id: number, amount: number) =>

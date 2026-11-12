@@ -12,4 +12,5 @@ export const MOCK_SELLER_SELECTORS = {
   message: '[data-testid="chat-log"] .msg[data-role]',
   messageText: '.msg-text',
   compose: '[data-testid="compose"]',
+  send: '[data-testid="send"]',
 } as const;

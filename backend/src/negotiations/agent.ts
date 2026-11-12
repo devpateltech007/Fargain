@@ -268,20 +268,59 @@ export function createNegotiationAgent({ db, userId, currency, llm }: AgentDeps)
       } catch (err) {
         // Agreement detection is a convenience; the seller message is already stored.
         agreement_error = err instanceof Error ? err.message : String(err);
+        db.prepare('UPDATE messages SET ai_reasoning_json = ? WHERE id = ?').run(
+          JSON.stringify({ risk_flags, agreement_error }),
+          message.id,
+        );
       }
     }
     return { message, risk_flags, agreement, agreement_error };
   }
 
-  /** The user approved (and maybe edited) text. Server-side re-check before it can go to the page. */
+  /** Server-side re-check before user-approved or autonomous text can go to the page. */
   function recordBuyerMessage(
     n: NegotiationRow,
     item: WishlistItemRow,
     text: string,
     draftMessageId?: number,
+    actor: 'user' | 'agent' = 'user',
+    validateOnly = false,
   ): MessageRow {
     if (n.status === 'paid' || n.status === 'abandoned')
       throw new ApiError(409, 'negotiation_closed', `negotiation is ${n.status}`);
+    if (actor === 'agent') {
+      if (n.status !== 'open')
+        throw new ApiError(
+          409,
+          'autopilot_stopped',
+          'autopilot can only message an open negotiation',
+        );
+      if (item.max_price === null)
+        throw new ApiError(409, 'autopilot_requires_max', 'set a maximum price before autopilot');
+      const history = listMessages(db, n.id);
+      const sellerMessages = history.filter((m) => m.role === 'seller');
+      const sellerRisk = sellerMessages.flatMap((m) => detectSellerRisks(m.text));
+      if (sellerRisk.length > 0)
+        throw new ApiError(422, 'seller_risk_review', 'seller risk requires buyer review');
+      const latestSeller = [...sellerMessages].at(-1);
+      const latestSellerAi = latestSeller?.ai_reasoning_json
+        ? (JSON.parse(latestSeller.ai_reasoning_json) as {
+            agreement?: { agreed?: boolean };
+            agreement_error?: string;
+          })
+        : null;
+      if (latestSellerAi?.agreement_error)
+        throw new ApiError(422, 'seller_uncertain', 'seller response requires buyer review');
+      if (latestSellerAi?.agreement?.agreed)
+        throw new ApiError(409, 'seller_accepted', 'seller agreement requires buyer review');
+      const sent = db
+        .prepare(
+          "SELECT COUNT(*) AS count FROM messages WHERE negotiation_id = ? AND role = 'buyer_sent'",
+        )
+        .get(n.id) as { count: number };
+      if (sent.count >= 3)
+        throw new ApiError(409, 'autopilot_message_limit', 'autopilot is limited to 3 messages');
+    }
     let draftRow: MessageRow | undefined;
     if (draftMessageId !== undefined) {
       draftRow = db
@@ -291,11 +330,37 @@ export function createNegotiationAgent({ db, userId, currency, llm }: AgentDeps)
         .get(draftMessageId, n.id) as MessageRow | undefined;
       if (!draftRow) throw new ApiError(404, 'not_found', 'draft message not found');
     }
+    let proposedOffer: number | null = null;
+    if (actor === 'agent') {
+      if (!draftRow || draftRow.text !== text)
+        throw new ApiError(422, 'draft_mismatch', 'autopilot can only send its exact saved draft');
+      const meta = JSON.parse(draftRow.ai_reasoning_json ?? '{}') as {
+        blocked?: boolean;
+        needs_user_input?: string | null;
+        risk_flags?: RiskFlag[];
+        proposed_offer?: number;
+      };
+      if (meta.blocked || meta.needs_user_input || (meta.risk_flags?.length ?? 0) > 0)
+        throw new ApiError(422, 'draft_requires_review', 'this draft requires buyer review');
+      proposedOffer = meta.proposed_offer ?? null;
+      if (proposedOffer === null || !n.assessment_json)
+        throw new ApiError(422, 'draft_invalid', 'autopilot draft is missing a verified offer');
+    }
     const violations = checkBuyerMessage({
       draftMessage: text,
-      proposedOffer: null,
+      proposedOffer,
       maxPrice: item.max_price,
     });
+    if (actor === 'agent' && n.assessment_json && proposedOffer !== null) {
+      violations.push(
+        ...checkOpeningOffer({
+          proposedOffer,
+          openingOffer: PriceAssessment.parse(JSON.parse(n.assessment_json))
+            .suggested_opening_offer,
+          buyerHasOffered: buyerHasOffered(listMessages(db, n.id)),
+        }),
+      );
+    }
     if (violations.length > 0) {
       audit(db, {
         userId,
@@ -305,17 +370,18 @@ export function createNegotiationAgent({ db, userId, currency, llm }: AgentDeps)
       });
       throw new ApiError(422, 'unsafe_message', 'message failed a safety check', violations);
     }
+    if (validateOnly) return draftRow!;
     const message = insertMessage(
       db,
       n.id,
       'buyer_sent',
       text,
-      draftRow ? { draft_message_id: draftRow.id } : undefined,
+      draftRow ? { draft_message_id: draftRow.id, actor } : undefined,
     );
     audit(db, {
       userId,
-      actor: 'user',
-      action: 'negotiation.buyer_message_approved',
+      actor,
+      action: actor === 'agent' ? 'agent.message_sent' : 'negotiation.buyer_message_approved',
       detail: {
         negotiation_id: n.id,
         message_id: message.id,
@@ -326,7 +392,16 @@ export function createNegotiationAgent({ db, userId, currency, llm }: AgentDeps)
     return message;
   }
 
-  return { ensureAssessment, draft, recordSellerMessage, recordBuyerMessage };
+  function validateAgentMessage(
+    n: NegotiationRow,
+    item: WishlistItemRow,
+    text: string,
+    draftMessageId: number,
+  ): void {
+    recordBuyerMessage(n, item, text, draftMessageId, 'agent', true);
+  }
+
+  return { ensureAssessment, draft, recordSellerMessage, recordBuyerMessage, validateAgentMessage };
 }
 
 export type NegotiationAgent = ReturnType<typeof createNegotiationAgent>;

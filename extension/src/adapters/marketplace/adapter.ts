@@ -231,6 +231,39 @@ export function createMarketplaceAdapter(doc: Document = document): SiteAdapter 
     return out;
   }
 
+  function sendFromComposer(value: string): boolean {
+    const hit = compose();
+    if (!hit) return false;
+    if (!fillComposeBox(hit.el, value)) return false;
+    const exact = (el: HTMLElement) => {
+      if (!isVisible(el, win)) return false;
+      const label =
+        `${el.getAttribute('aria-label') ?? ''} ${el.getAttribute('title') ?? ''} ${el.textContent ?? ''}`
+          .replace(/\s+/g, ' ')
+          .trim();
+      return /^(send|send message)$/i.test(label) || /send/i.test(el.dataset.testid ?? '');
+    };
+    const scopes: ParentNode[] = [];
+    const form = hit.el.closest('form');
+    if (form) scopes.push(form);
+    const dialog = hit.el.closest('[role="dialog"]');
+    if (dialog) scopes.push(dialog);
+    let node: Element | null = hit.el.parentElement;
+    for (let depth = 0; node && depth < 5; depth++, node = node.parentElement) scopes.push(node);
+
+    for (const scope of scopes) {
+      const buttons = [...scope.querySelectorAll<HTMLElement>('button,[role="button"]')].filter(
+        exact,
+      );
+      if (buttons.length !== 1) continue;
+      const button = buttons[0]!;
+      if ('disabled' in button && (button as HTMLButtonElement).disabled) return false;
+      button.click();
+      return true;
+    }
+    return false;
+  }
+
   return {
     id: 'facebook_marketplace',
     detect: () => onFacebook() && (isItemPage() || isThreadPage()),
@@ -244,6 +277,8 @@ export function createMarketplaceAdapter(doc: Document = document): SiteAdapter 
       const box = compose();
       return box ? fillComposeBox(box.el, value) : false;
     },
+
+    sendMessage: sendFromComposer,
 
     onChange(cb) {
       if (!onFacebook()) return () => undefined;

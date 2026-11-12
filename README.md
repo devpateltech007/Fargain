@@ -1,13 +1,13 @@
 # Fargain
 
-Fargain is a buyer-side deal assistant. It watches products, compares prices, drafts negotiation messages, and creates PayPal sandbox payments after the buyer confirms a deal.
+Fargain is a buyer-side shopping agent. It identifies products from Instagram links, compares prices, and can autonomously negotiate within a buyer-set maximum.
 
-**Intuitive buying experience.** Fargain combines AI shopping assistance, live price signals, buyer-approved negotiation, and PayPal sandbox checkout. The buyer stays in control: Fargain drafts messages for review and never sends seller messages or payments automatically.
+**Intuitive buying experience.** Fargain combines AI product identification and negotiation, Channel3 price signals, bounded message autopilot, and PayPal sandbox checkout. Autopilot is opt-in, capped at three messages, and stops on safety flags or a seller agreement. The buyer confirms the agreed price and approves checkout in PayPal.
 
 ## Product flows
 
 - **Wishlist and price watch.** Save products manually, from Instagram, or from the Amazon extension. Channel3 compares retailer offers and the backend records snapshots and price-drop alerts.
-- **Negotiation assistant.** The Chrome side panel reads supported Marketplace listings and drafts messages. You review and send each message yourself. The server enforces the maximum price and blocks budget disclosure and risky payment requests.
+- **Negotiation autopilot.** The Chrome side panel reads supported Marketplace listings and can send up to three AI-generated messages after you enable autopilot for that listing. It stops on risk, uncertainty, unsupported send controls, or seller acceptance. Server-side guardrails enforce your maximum and block budget disclosure and risky payment requests.
 - **PayPal sandbox checkout.** After you confirm an agreed price, the backend creates a sandbox order only when the amount is within the wishlist maximum.
 - **Instagram Reel Mode.** Paste an Instagram link in the dashboard or link an Instagram professional account and share a post by DM. The product identification flow uses provided link, caption, thumbnail, or a screenshot. It does not download or scrape video.
 - **Profile discounts.** Enter student status, birthday, memberships, and discounts manually. Fargain does not log into retailer accounts or scan email.
@@ -100,8 +100,10 @@ Then load or distribute `extension/dist` using your chosen Chrome extension proc
 
 - The backend enforces `max_price`; the negotiation LLM never receives it.
 - PayPal is hard-coded to sandbox endpoints. There is no live-payment switch.
-- The extension only fills a message compose box. The user clicks Send.
-- Every agent draft, user approval, and payment attempt is written to the audit trail.
+- The PayPal sandbox flow demonstrates order creation, buyer approval, capture, and status against Fargain's configured merchant account. It does not pay out to a Facebook Marketplace seller.
+- Autopilot requires an item maximum, sends at most three messages, and stops on risk or uncertainty. Unsupported page controls fail closed.
+- The buyer confirms the full agreed price and approves every PayPal sandbox checkout.
+- Agent messages, buyer approvals, and payment attempts are written to the audit trail.
 - Channel3 results are filtered for exact product matches, US availability, condition, stock, and implausible outliers. The dashboard labels observed prices as comparisons, not guaranteed checkout prices.
 - Marketplace selectors are best-effort and depend on third-party page markup. The selector diagnostics appear in the extension.
 

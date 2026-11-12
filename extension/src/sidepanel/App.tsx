@@ -17,7 +17,7 @@ import {
 import { Alerts } from './Alerts';
 import { AmazonView } from './AmazonView';
 import { ProfileForm } from './ProfileForm';
-import { getPageContext, insertIntoPage } from './tab';
+import { getPageContext, insertIntoPage, sendFromPage } from './tab';
 
 const money = (n: number | null | undefined) =>
   n === null || n === undefined ? '-' : `$${n.toFixed(2)}`;
@@ -92,6 +92,8 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
   const [ctx, setCtx] = useState<PageContext | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [neg, setNeg] = useState<NegotiationView | null>(null);
+  const [autoPilot, setAutoPilot] = useState(false);
+  const [lastSeller, setLastSeller] = useState<SellerMessageResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [llmReady, setLlmReady] = useState(true);
@@ -132,6 +134,8 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
   const listingUrl = ctx?.listing?.url;
   useEffect(() => {
     setNeg(null);
+    setAutoPilot(false);
+    setLastSeller(null);
     if (!listingUrl) return;
     void api
       .findNegotiations(listingUrl)
@@ -142,7 +146,6 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
   }, [api, listingUrl]);
 
   // Forward new seller messages from the page to the backend (risk scan + agreement detection).
-  const [lastSeller, setLastSeller] = useState<SellerMessageResponse | null>(null);
   useEffect(() => {
     if (!neg || !ctx || syncing.current) return;
     const pageSeller = ctx.conversation.filter((m) => m.role === 'seller');
@@ -184,7 +187,7 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
         </button>
       </header>
       <p className="muted small">
-        Intuitive buying experience. Review every draft and approve sandbox checkout.
+        Set your limit once. Fargain can negotiate within it; you approve PayPal checkout.
       </p>
       {error && <p className="error">{error}</p>}
       <Alerts api={api} />
@@ -226,7 +229,16 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
       )}
       {ctx?.site === 'amazon' && ctx.listing && <AmazonView api={api} ctx={ctx} />}
       {ctx?.listing && ctx.site !== 'amazon' && !neg && (
-        <StartNegotiation api={api} ctx={ctx} onStarted={setNeg} run={run} busy={busy} />
+        <StartNegotiation
+          api={api}
+          ctx={ctx}
+          onStarted={(started, autonomous) => {
+            setNeg(started);
+            setAutoPilot(autonomous);
+          }}
+          run={run}
+          busy={busy}
+        />
       )}
       {neg && ctx && ctx.site !== 'amazon' && (
         <Negotiation
@@ -237,6 +249,9 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
           run={run}
           busy={busy}
           llmReady={llmReady}
+          autoPilot={autoPilot}
+          onEnableAutoPilot={() => setAutoPilot(true)}
+          onPauseAutoPilot={() => setAutoPilot(false)}
         />
       )}
     </main>
@@ -254,7 +269,7 @@ function StartNegotiation({
 }: {
   api: Api;
   ctx: PageContext;
-  onStarted: (n: NegotiationView) => void;
+  onStarted: (n: NegotiationView, autonomous: boolean) => void;
   run: Run;
   busy: string | null;
 }) {
@@ -267,7 +282,7 @@ function StartNegotiation({
     void api.wishlist().then((r) => setItems(r.items.filter((i) => i.status !== 'purchased')));
   }, [api]);
 
-  const start = () =>
+  const start = (autonomous = false) =>
     run('start', async () => {
       let id = itemId;
       if (id === 'new') {
@@ -294,6 +309,7 @@ function StartNegotiation({
             attributes: listing.attributes,
           },
         }),
+        autonomous,
       );
     });
 
@@ -336,9 +352,26 @@ function StartNegotiation({
           </label>
         </>
       )}
-      <button onClick={start} disabled={busy !== null || (itemId === 'new' && !maxPrice)}>
-        {busy === 'start' ? 'Starting…' : 'Start'}
-      </button>
+      <div className="row">
+        <button
+          onClick={() => start(false)}
+          disabled={busy !== null || (itemId === 'new' && !maxPrice)}
+        >
+          {busy === 'start' ? 'Starting…' : 'Start manually'}
+        </button>
+        <button
+          onClick={() => start(true)}
+          disabled={
+            busy !== null ||
+            (itemId === 'new' ? !maxPrice : !items.find((i) => i.id === itemId)?.max_price)
+          }
+        >
+          Start autopilot
+        </button>
+      </div>
+      <p className="small muted">
+        Autopilot may send up to 3 messages, then pauses for your price review and PayPal approval.
+      </p>
     </section>
   );
 }
@@ -351,6 +384,9 @@ function Negotiation({
   run,
   busy,
   llmReady,
+  autoPilot,
+  onEnableAutoPilot,
+  onPauseAutoPilot,
 }: {
   api: Api;
   neg: NegotiationView;
@@ -359,6 +395,9 @@ function Negotiation({
   run: Run;
   busy: string | null;
   llmReady: boolean;
+  autoPilot: boolean;
+  onEnableAutoPilot: () => void;
+  onPauseAutoPilot: () => void;
 }) {
   const [draft, setDraft] = useState<DraftResponse | null>(null);
   const [text, setText] = useState('');
@@ -367,6 +406,14 @@ function Negotiation({
   const [inserted, setInserted] = useState(false);
   const [confirmValue, setConfirmValue] = useState('');
   const [payment, setPayment] = useState<PaymentView | null>(null);
+  const [autoStatus, setAutoStatus] = useState<string | null>(null);
+  const autoRunRef = useRef(run);
+  const autoPilotRef = useRef(autoPilot);
+  const pauseAutoPilotRef = useRef(onPauseAutoPilot);
+  const handledSellerRef = useRef<number | null>(null);
+  autoRunRef.current = run;
+  autoPilotRef.current = autoPilot;
+  pauseAutoPilotRef.current = onPauseAutoPilot;
 
   const agreement = lastSeller?.agreement?.agreed ? lastSeller.agreement : null;
   useEffect(() => {
@@ -391,6 +438,14 @@ function Negotiation({
       m.role === 'seller' ? ((m.ai?.risk_flags as RiskFlag[] | undefined) ?? []) : [],
     ),
   ];
+  const sentCount = neg.messages.filter((m) => m.role === 'buyer_sent').length;
+  const sellerMessages = neg.messages.filter((m) => m.role === 'seller');
+  const lastSellerLog = sellerMessages.at(-1);
+  const sellerAlreadyAgreed = Boolean(
+    (lastSellerLog?.ai?.agreement as { agreed?: boolean } | undefined)?.agreed,
+  );
+  const autopilotHandledSeller =
+    lastSeller !== null && handledSellerRef.current === lastSeller.message.id;
 
   const makeDraft = () =>
     run('draft', async () => {
@@ -416,7 +471,11 @@ function Negotiation({
 
   const confirm = () =>
     run('confirm', async () => {
-      setNeg(await api.confirmPrice(neg.id, Number(confirmValue)));
+      const confirmed = await api.confirmPrice(neg.id, Number(confirmValue));
+      setNeg(confirmed);
+      const created = await api.createPayment(neg.id, confirmed.agreed_price!);
+      setPayment(created);
+      if (created.approve_url) await chrome.tabs.create({ url: created.approve_url });
     });
 
   const pay = () =>
@@ -425,6 +484,69 @@ function Negotiation({
       setPayment(p);
       if (p.approve_url) await chrome.tabs.create({ url: p.approve_url });
     });
+
+  useEffect(() => {
+    if (!autoPilot || !llmReady || neg.status !== 'open' || busy !== null) return;
+    const seller = lastSeller;
+    if (seller && handledSellerRef.current === seller.message.id) return;
+    if (!seller) {
+      if (handledSellerRef.current === 0) return;
+      handledSellerRef.current = 0;
+    }
+    const sentCount = neg.messages.filter((m) => m.role === 'buyer_sent').length;
+    if (!seller && (sentCount > 0 || neg.messages.some((m) => m.role === 'seller'))) return;
+    if (seller) handledSellerRef.current = seller.message.id;
+
+    void autoRunRef.current('autopilot', async () => {
+      const pause = (reason: string) => {
+        setAutoStatus(`Paused: ${reason}`);
+        pauseAutoPilotRef.current();
+      };
+      try {
+        if (seller?.risk_flags.length) {
+          pause('a seller safety flag needs your review.');
+          return;
+        }
+        if (seller?.agreement_error) {
+          pause('the seller response could not be verified.');
+          return;
+        }
+        if (seller?.agreement?.agreed) {
+          const agreed = seller.agreement.price;
+          if (agreed === undefined || agreed > (neg.item.max_price ?? 0)) {
+            pause('the seller agreement is above your limit or could not be verified.');
+            return;
+          }
+          setAutoStatus(
+            `Seller accepted ${money(agreed)} within your max. Review the full terms and confirm the price before checkout.`,
+          );
+          pauseAutoPilotRef.current();
+          return;
+        }
+        if (sentCount >= 3) {
+          pause('the 3-message limit was reached.');
+          return;
+        }
+        const next = await api.draft(neg.id);
+        if (next.blocked || next.draft.needs_user_input || next.risk_flags.length > 0) {
+          pause(next.draft.needs_user_input || 'the draft needs a safety review.');
+          return;
+        }
+        await api.validateAgentMessage(neg.id, next.draft.draft_message, next.message.id);
+        if (!autoPilotRef.current) return;
+        if (!(await sendFromPage(next.draft.draft_message))) {
+          pause('the send control could not be verified on this page.');
+          return;
+        }
+        await api.agentMessage(neg.id, next.draft.draft_message, next.message.id);
+        setNeg(await api.negotiation(neg.id));
+        setAutoStatus(`Fargain sent message ${sentCount + 1} of 3 and is waiting for the seller.`);
+      } catch (e) {
+        pause(errText(e));
+        throw e;
+      }
+    });
+  }, [api, autoPilot, busy, lastSeller, llmReady, neg, setNeg]);
 
   return (
     <>
@@ -453,6 +575,39 @@ function Negotiation({
       <Flags flags={allFlags} />
 
       {neg.status === 'open' && (
+        <section className="card">
+          <div className="row">
+            <div>
+              <h3>Fargain autopilot</h3>
+              <p className="small muted">
+                Sends up to 3 safe messages within your max. Pauses when it needs your judgment.
+              </p>
+            </div>
+            {autoPilot ? (
+              <button className="secondary" onClick={onPauseAutoPilot}>
+                Pause
+              </button>
+            ) : (
+              <button
+                onClick={onEnableAutoPilot}
+                disabled={
+                  !neg.item.max_price ||
+                  !llmReady ||
+                  sentCount >= 3 ||
+                  sellerAlreadyAgreed ||
+                  autopilotHandledSeller
+                }
+              >
+                Let Fargain handle it
+              </button>
+            )}
+          </div>
+          {autoStatus && <p className="small">{autoStatus}</p>}
+          <p className="small muted">You still approve the final payment in PayPal.</p>
+        </section>
+      )}
+
+      {neg.status === 'open' && !autoPilot && (
         <section className="card">
           <h3>Next message</h3>
           {!draft && (
@@ -506,7 +661,7 @@ function Negotiation({
         </section>
       )}
 
-      {neg.status === 'open' && (
+      {neg.status === 'open' && !autoPilot && (
         <section className="card">
           <h3>Agreed price</h3>
           {agreement && (
@@ -523,7 +678,7 @@ function Negotiation({
               placeholder="Agreed price"
             />
             <button onClick={confirm} disabled={busy !== null || !confirmValue}>
-              I confirm this price
+              Confirm deal & open PayPal
             </button>
           </div>
         </section>

@@ -25,8 +25,14 @@ export async function getPageContext(): Promise<PageContext | { error: string }>
   return { error: r.ok ? 'unexpected response' : r.error };
 }
 
-/** Fill the page's compose box. Never sends: the user clicks Send on the page. */
+/** Fill the page's compose box for ordinary, buyer-reviewed drafts. */
 export async function insertIntoPage(text: string): Promise<boolean> {
   const r = await send({ type: 'fargain:insert', text });
   return r.ok && 'inserted' in r ? r.inserted : false;
+}
+
+/** Send through the active adapter's positively identified control for opted-in autopilot. */
+export async function sendFromPage(text: string): Promise<boolean> {
+  const r = await send({ type: 'fargain:send', text });
+  return r.ok && 'sent' in r ? r.sent : false;
 }

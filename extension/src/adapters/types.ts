@@ -2,8 +2,8 @@
  * All site-specific DOM logic lives behind this interface. Each adapter keeps its selectors in a
  * single `selectors.ts` file next to it, so a site redesign only touches one file.
  *
- * Human-in-the-loop rule: `insertMessage` only fills the page's compose box. Adapters must never
- * click send, submit forms, or dispatch Enter key events.
+ * Sending is available only to the explicit, bounded autopilot flow. It must target the active
+ * conversation's send control and fail closed when the control cannot be identified.
  */
 
 export interface Listing {
@@ -35,6 +35,8 @@ export interface SiteAdapter {
   getConversation(): ConversationMessage[];
   /** Fill the compose box with `text` without sending. Returns false if no compose box was found. */
   insertMessage(text: string): boolean;
+  /** Fill and click a positively identified send control. Never synthesize Enter. */
+  sendMessage?(text: string): boolean;
   /** Subscribe to listing/conversation changes. Returns an unsubscribe function. */
   onChange(cb: () => void): () => void;
   /**

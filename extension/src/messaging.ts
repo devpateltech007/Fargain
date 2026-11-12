@@ -2,7 +2,9 @@ import type { ConversationMessage, Listing, SiteId } from './adapters/types';
 
 /** Side panel -> content script requests (chrome.tabs.sendMessage). */
 export type ContentRequest =
-  { type: 'fargain:getContext' } | { type: 'fargain:insert'; text: string };
+  | { type: 'fargain:getContext' }
+  | { type: 'fargain:insert'; text: string }
+  | { type: 'fargain:send'; text: string };
 
 export interface PageContext {
   site: SiteId | null;
@@ -15,6 +17,7 @@ export interface PageContext {
 export type ContentResponse =
   | { ok: true; context: PageContext }
   | { ok: true; inserted: boolean }
+  | { ok: true; sent: boolean }
   | { ok: false; error: string };
 
 /** Content script -> extension broadcast when the page's listing or chat changes. */

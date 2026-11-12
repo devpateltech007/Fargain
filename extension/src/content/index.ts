@@ -38,8 +38,10 @@ chrome.runtime.onMessage.addListener(
             : { site: null, listing: null, conversation: [] },
         });
       } else if (msg.type === 'fargain:insert') {
-        // Only fills the compose box. The user reviews and clicks send.
         sendResponse({ ok: true, inserted: a ? a.insertMessage(msg.text) : false });
+      } else if (msg.type === 'fargain:send') {
+        // Called only by the explicit bounded-autopilot action in the side panel.
+        sendResponse({ ok: true, sent: a?.sendMessage?.(msg.text) ?? false });
       }
     } catch (err) {
       sendResponse({ ok: false, error: err instanceof Error ? err.message : String(err) });

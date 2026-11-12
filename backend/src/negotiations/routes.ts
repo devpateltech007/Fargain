@@ -125,6 +125,28 @@ export async function negotiationRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(201).send({ message: serializeMessage(message) });
   });
 
+  app.post('/api/negotiations/:id/agent-message', async (req, reply) => {
+    if (!app.deps.llmConfigured)
+      throw new ApiError(503, 'llm_not_configured', 'autopilot requires an AI provider');
+    const { id } = IdParams.parse(req.params);
+    const { text, draft_message_id } = BuyerMessageBody.parse(req.body);
+    const { negotiation, item } = load(id);
+    const message = agent.recordBuyerMessage(negotiation, item, text, draft_message_id, 'agent');
+    return reply.status(201).send({ message: serializeMessage(message) });
+  });
+
+  app.post('/api/negotiations/:id/agent-message/validate', async (req) => {
+    if (!app.deps.llmConfigured)
+      throw new ApiError(503, 'llm_not_configured', 'autopilot requires an AI provider');
+    const { id } = IdParams.parse(req.params);
+    const { text, draft_message_id } = BuyerMessageBody.parse(req.body);
+    if (draft_message_id === undefined)
+      throw new ApiError(400, 'invalid_request', 'draft_message_id is required');
+    const { negotiation, item } = load(id);
+    agent.validateAgentMessage(negotiation, item, text, draft_message_id);
+    return { validated: true };
+  });
+
   app.post('/api/negotiations/:id/confirm-price', async (req) => {
     const { id } = IdParams.parse(req.params);
     const { agreed_price } = ConfirmPriceBody.parse(req.body);

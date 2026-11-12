@@ -9,14 +9,18 @@ Demo features:
    the product and adds it to the user's wishlist.
 2. **Amazon:** the Chrome extension side panel shows Channel3 cross-retailer price comparison,
    discounts from the user's profile, and wishlist price-drop alerts.
-3. **Facebook Marketplace:** the agent drafts negotiation messages, the user approves each one, and
-   once a price is agreed the backend creates a PayPal sandbox payment capped at the item's max price.
+3. **Facebook Marketplace:** an explicitly enabled autopilot drafts and can send up to three
+   bounded negotiation messages before pausing when a
+   seller agrees or a safety rule requires review. The buyer confirms the agreed price and approves
+   the resulting PayPal sandbox checkout.
 
 ## Hard rules (do not relax these)
 
-- **Human in the loop.** The agent never sends a message or a payment by itself. The extension only
-  inserts drafted text into the page's compose box; the user clicks send. Adapters must never click
-  send buttons, submit forms, or synthesize Enter key presses.
+- **Bounded autonomy.** Autopilot must be explicitly enabled for a listing and requires a server-
+  stored maximum price. It may send at most three agent-generated messages using a positively
+  identified page send control. Stop on risk flags, uncertainty, unsupported controls, or seller
+  acceptance. Never synthesize Enter. The buyer confirms the full agreed price and approves PayPal
+  checkout; never automate either confirmation.
 - **Max price is enforced server-side.** Any payment request above the item's `max_price` is
   rejected and written to `audit_log`. Never rely on the prompt alone. Compare in integer cents.
 - **The negotiation agent never reveals the user's max price** (not in drafts, reasoning shown to
@@ -81,13 +85,14 @@ schema}` and arrives in a `text` block. Forced tool use (`tool_choice` any/tool)
 ## Negotiation guardrails (backend/src/negotiations)
 
 - `prompts.ts` builders never receive `max_price`; a test asserts no rendering of it reaches the LLM.
-- `guardrails.ts` checks every draft AND every user-approved message (`POST .../buyer-message`)
+- `guardrails.ts` checks every draft AND every user-approved or autonomous message
+  (`POST .../buyer-message` or `POST .../agent-message`)
   for amounts above max (in cents), budget-disclosure phrasing, and proposing off-platform
   payment. Over-limit drafts get one retry with non-revealing feedback, then are returned as
   `blocked` with `needs_user_input`; the side panel cannot insert blocked drafts.
 - Seller messages are scanned deterministically for off-platform payment, scams, and budget
   probes; LLM flags are merged in, never substituted.
-- Agreement detection is a suggestion only; the user must confirm the price (`confirm-price`).
+- Agreement detection is a suggestion only; the buyer must confirm the price (`confirm-price`).
 
 ## Facebook Marketplace adapter (extension/src/adapters/marketplace)
 
@@ -98,7 +103,8 @@ schema}` and arrives in a `text` block. Forced tool use (`tool_choice` any/tool)
   `https://www.facebook.com/marketplace/item/<id>/`, so they share one negotiation.
 - The content script matches all of facebook.com (SPA navigation) but stays inert outside
   `/marketplace/item/*` and `/messages/t/*`; DOM observation only runs on those pages.
-- Only fills the message box. Automating Facebook may violate its terms; the user always sends.
+- Autopilot can click only a positively identified send control after explicit per-listing opt-in.
+  Facebook selectors are best-effort; fail closed when the control cannot be verified.
 
 ## Stack and layout
 

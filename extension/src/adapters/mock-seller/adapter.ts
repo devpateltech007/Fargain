@@ -41,6 +41,16 @@ export function createMockSellerAdapter(doc: Document = document): SiteAdapter {
       return box ? fillComposeBox(box, value) : false;
     },
 
+    sendMessage(value: string): boolean {
+      const box = doc.querySelector<HTMLTextAreaElement>(S.compose);
+      const button = doc.querySelector<HTMLButtonElement>(S.send);
+      if (!box || !button || button.disabled) return false;
+      if (box.value.trim() !== value.trim()) fillComposeBox(box, value);
+      if (box.value.trim() !== value.trim()) return false;
+      button.click();
+      return true;
+    },
+
     onChange(cb) {
       const log = doc.querySelector(S.chatLog);
       return observe(log ?? doc.body, cb);
