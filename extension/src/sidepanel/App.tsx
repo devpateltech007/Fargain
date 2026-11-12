@@ -334,7 +334,7 @@ function StartNegotiation({
           <option value="new">+ New item from this listing</option>
           {items.map((i) => (
             <option key={i.id} value={i.id}>
-              {i.title} (max {money(i.max_price)})
+              {i.title} (target {money(i.target_price)} · max {money(i.max_price)})
             </option>
           ))}
         </select>
@@ -379,7 +379,8 @@ function StartNegotiation({
         </button>
       </div>
       <p className="small muted">
-        Autopilot may send up to 3 messages, then pauses for your price review and PayPal approval.
+        Starting autopilot sends the opening offer. Fargain then responds to seller replies, up to 3
+        messages total, and pauses for your review before PayPal checkout.
       </p>
     </section>
   );

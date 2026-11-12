@@ -13,6 +13,7 @@ import { negotiationRoutes } from './negotiations/routes.js';
 import { createPayPalClient, type PayPalApi } from './payments/paypal-client.js';
 import { paymentRoutes } from './payments/routes.js';
 import { createChannel3Client, type Channel3Api } from './pricing/channel3.js';
+import { demoRoutes } from './demo/routes.js';
 import { pricingRoutes } from './pricing/routes.js';
 import type { Messenger } from './reels/messenger.js';
 import { reelRoutes } from './reels/routes.js';
@@ -263,6 +264,7 @@ export async function buildApp({
   await app.register(paymentRoutes);
   await app.register(pricingRoutes);
   await app.register(reelRoutes);
+  await app.register(demoRoutes);
 
   // Static mock seller page (a stand-in "third-party" marketplace chat for repeatable demos).
   await app.register(fastifyStatic, {

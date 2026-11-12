@@ -845,6 +845,119 @@ tbody tr:hover {
   font-size: 12px;
   font-weight: 650;
 }
+.demo-journey {
+  margin-bottom: 22px;
+  border-color: #a99aff40;
+  background:
+    radial-gradient(ellipse at 92% 0%, #a99aff15, transparent 42%),
+    var(--panel);
+}
+.demo-journey > .panel-heading {
+  align-items: center;
+  gap: 20px;
+}
+.demo-journey .panel-heading h3 {
+  margin: 11px 0 5px;
+}
+.demo-journey .panel-heading p,
+.demo-match-card p {
+  margin: 0;
+}
+.demo-note {
+  display: block;
+  margin-top: 16px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.demo-timeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+.demo-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-height: 48px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.demo-step-dot {
+  display: grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid #ffffff26;
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+.demo-step.complete {
+  color: var(--text);
+}
+.demo-step.complete .demo-step-dot {
+  border-color: #c7f36a66;
+  color: #c7f36a;
+  background: #c7f36a14;
+}
+.demo-offers {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #ffffff12;
+  border-radius: 14px;
+  background: #080b10a8;
+}
+.panel-heading.compact {
+  margin-bottom: 13px;
+}
+.panel-heading.compact h4,
+.demo-match-card h4 {
+  margin: 0 0 4px;
+}
+.panel-heading.compact p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.demo-price-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.demo-price-tile {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid #ffffff12;
+  border-radius: 11px;
+  background: #ffffff05;
+}
+.demo-price-tile small {
+  color: var(--muted);
+}
+.demo-price-tile b {
+  color: #ffca86;
+  font-size: 16px;
+}
+.demo-match-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 13px;
+  padding: 17px;
+  border: 1px solid #c7f36a35;
+  border-radius: 14px;
+  background: #c7f36a09;
+}
+.demo-open-link {
+  flex: 0 0 auto;
+  text-decoration: none;
+}
 .good-price {
   color: var(--lime);
   font-weight: 720;
@@ -1370,6 +1483,9 @@ tbody tr:hover {
   .discount-fields select {
     grid-column: span 2;
   }
+  .demo-timeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 @media (max-width: 760px) {
   .topbar {
@@ -1393,6 +1509,23 @@ tbody tr:hover {
   .layout {
     display: block;
     min-height: calc(100vh - 70px);
+  }
+  .demo-journey > .panel-heading,
+  .demo-match-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .demo-journey > .panel-heading .primary,
+  .demo-open-link {
+    width: 100%;
+    justify-content: center;
+  }
+  .demo-timeline {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .demo-price-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .sidebar {
     height: auto;

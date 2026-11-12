@@ -78,6 +78,19 @@ type ReelResult = {
   status: string;
   identification?: { candidates: { label: string; confidence: number; search_query: string }[] };
 };
+type DemoOffer = { retailer: string; price: number; url: string | null };
+type DemoStart = {
+  simulated: true;
+  item_id: number;
+  title: string;
+  buyer_max_price: number;
+  target_price: number;
+  offer_source: 'channel3_live' | 'demo_fixture';
+  offers: DemoOffer[];
+  best_price: number;
+  marketplace: { url: string; title: string; asking_price: number };
+};
+type DemoRun = { stage: number; result?: DemoStart };
 type Profile = {
   student: boolean;
   birthday?: string;
@@ -104,6 +117,13 @@ const money = (value: number | null | undefined) =>
     ? '—'
     : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 const DEMO_MARKETPLACE_URL = 'https://www.facebook.com/marketplace/item/1469470546248672/';
+const DEMO_STAGE_LABELS = [
+  'Reel DM received by Fargain',
+  'Sony WH-1000XM5 identified · $130 maximum saved',
+  'Channel3 checked new retailer offers',
+  'New prices are over budget · checking Marketplace',
+  'Used listing found · ready to negotiate',
+];
 const isSonyDemoItem = (title: string) =>
   /sony/i.test(title) && /wh[\s-]?1000\s*-?\s*xm5/i.test(title);
 const initialProfile: Profile = { student: false, memberships: [], discounts: [] };
@@ -130,6 +150,8 @@ function App() {
   const [igUrl, setIgUrl] = useState('');
   const [igBudget, setIgBudget] = useState('130');
   const [igResult, setIgResult] = useState<ReelResult | null>(null);
+  const [demoRun, setDemoRun] = useState<DemoRun | null>(null);
+  const [demoRunning, setDemoRunning] = useState(false);
 
   const request = useCallback(
     async <T,>(path: string, method = 'GET', body?: unknown): Promise<T> => {
@@ -274,6 +296,30 @@ function App() {
     }
   }
 
+  async function simulateSonyReelDm() {
+    setDemoRunning(true);
+    setError('');
+    setDemoRun({ stage: 1 });
+    try {
+      const result = await request<DemoStart>('/api/demo/sony/start', 'POST', {
+        run_id: crypto.randomUUID(),
+      });
+      setDemoRun({ stage: 2, result });
+      await load();
+      await new Promise((resolve) => window.setTimeout(resolve, 450));
+      setDemoRun({ stage: 3, result });
+      await new Promise((resolve) => window.setTimeout(resolve, 450));
+      setDemoRun({ stage: 4, result });
+      await new Promise((resolve) => window.setTimeout(resolve, 450));
+      setDemoRun({ stage: 5, result });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not start the Sony demo');
+      setDemoRun(null);
+    } finally {
+      setDemoRunning(false);
+    }
+  }
+
   async function confirmReel(choice: number) {
     if (!igResult) return;
     await act(() => request(`/api/reels/${igResult.session_id}/confirm`, 'POST', { choice }));
@@ -396,6 +442,84 @@ function App() {
           )}
           {tab === 'Overview' && (
             <>
+              <section className="panel demo-journey">
+                <div className="panel-heading">
+                  <div>
+                    <span className="source-pill">SCRIPTED DEMO</span>
+                    <h3>Run the Sony Reel story</h3>
+                    <p>
+                      Simulate the Instagram DM, compare new prices, then open the prepared used
+                      listing.
+                    </p>
+                  </div>
+                  <button className="primary" onClick={() => void simulateSonyReelDm()} disabled={demoRunning}>
+                    {demoRunning ? 'Running the story…' : 'Simulate Reel DM · $130 budget'}
+                  </button>
+                </div>
+                <small className="demo-note">
+                  No Instagram DM is sent or fetched. Prices use Channel3 when results support this
+                  above-budget story, otherwise the dashboard uses labeled demo fixtures.
+                </small>
+                {demoRun && (
+                  <div className="demo-timeline" aria-live="polite">
+                    {DEMO_STAGE_LABELS.map((label, index) => {
+                      const stage = index + 1;
+                      const complete = stage <= demoRun.stage;
+                      return (
+                        <div className={`demo-step ${complete ? 'complete' : ''}`} key={label}>
+                          <span className="demo-step-dot">{complete ? '✓' : stage}</span>
+                          <span>{label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {demoRun?.result && (
+                  <>
+                    <div className="demo-offers">
+                      <div className="panel-heading compact">
+                        <div>
+                          <h4>New retailer price check</h4>
+                          <p>
+                            {demoRun.result.offer_source === 'channel3_live'
+                              ? 'Live Channel3 results'
+                              : 'Channel3 demo fixture · sample prices'}
+                          </p>
+                        </div>
+                        <span className="over-budget">Best {money(demoRun.result.best_price)} · over $130</span>
+                      </div>
+                      <div className="demo-price-grid">
+                        {demoRun.result.offers.slice(0, 4).map((offer, index) => (
+                          <div className="demo-price-tile" key={`${offer.retailer}-${index}`}>
+                            <small>{offer.retailer}</small>
+                            <b>{money(offer.price)}</b>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {demoRun.stage >= 5 && (
+                      <div className="demo-match-card">
+                        <div>
+                          <span className="pill">USED MATCH FOUND</span>
+                          <h4>{demoRun.result.marketplace.title}</h4>
+                          <p>
+                            Asking {money(demoRun.result.marketplace.asking_price)} · target{' '}
+                            {money(demoRun.result.target_price)} · max {money(demoRun.result.buyer_max_price)}
+                          </p>
+                        </div>
+                        <a
+                          className="primary demo-open-link"
+                          href={demoRun.result.marketplace.url || DEMO_MARKETPLACE_URL}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open listing in Marketplace ↗
+                        </a>
+                      </div>
+                    )}
+                  </>
+                )}
+              </section>
               <section className="welcome-card">
                 <div>
                   <span className="pill">✦ &nbsp; YOUR PERSONAL DEAL AGENT</span>

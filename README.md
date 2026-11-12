@@ -10,6 +10,7 @@ Fargain is a buyer-side shopping agent. It identifies products from Instagram li
 - **Negotiation autopilot.** The Chrome side panel reads supported Marketplace listings and can send up to three AI-generated messages after you enable autopilot for that listing. It stops on risk, uncertainty, unsupported send controls, or seller acceptance. Server-side guardrails enforce your maximum and block budget disclosure and risky payment requests.
 - **PayPal sandbox checkout.** After you confirm an agreed price, the backend creates a sandbox order only when the amount is within the wishlist maximum.
 - **Instagram Reel Mode.** Link an Instagram professional account and DM a Reel with a budget to add the identified product, Channel3 offers, and private max price to the wishlist. The dashboard link flow is a fallback and includes a budget field. Identification uses the provided link, caption, thumbnail, or screenshot; it does not download or scrape video.
+- **Scripted demo mode.** The dashboard’s **Simulate Reel DM** button creates the Sony WH-1000XM5 demo item with a $130 maximum and $120 target, records Channel3 results when they support the above-budget story, and otherwise records labeled fixture prices. It does not send or fetch an Instagram DM.
 - **Prepared Marketplace demo match.** The Sony WH-1000XM5 demo row opens a curated listing URL for the walkthrough. This shortcut is not live Marketplace search.
 - **Profile discounts.** Enter student status, birthday, memberships, and discounts manually. Fargain does not log into retailer accounts or scan email.
 
