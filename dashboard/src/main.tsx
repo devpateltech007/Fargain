@@ -276,7 +276,7 @@ function App() {
       <div className="brandmark">f</div>
       <div>
         <strong>Fargain</strong>
-        <span>Your agent haggles. PayPal settles.</span>
+        <span>Intuitive buying experience.</span>
       </div>
       <div className="top-actions">
         <span className="connection">
@@ -294,7 +294,7 @@ function App() {
         {header}
         <main className="setup">
           <div className="eyebrow">YOUR BUYING COMMAND CENTER</div>
-          <h1>Welcome to Fargain</h1>
+          <h1>Buy with confidence.</h1>
           <p>
             Connect to your private backend with your API token. Your token stays in this browser.
           </p>
@@ -390,7 +390,7 @@ function App() {
               <section className="welcome-card">
                 <div>
                   <span className="pill">✦ &nbsp; YOUR PERSONAL DEAL AGENT</span>
-                  <h2>More value. Less effort.</h2>
+                  <h2>Buy with confidence.</h2>
                   <p>
                     Keep your finds in one place. We’ll watch prices and help you negotiate
                     confidently.

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Fargain",
   "version": "0.1.0",
-  "description": "Your agent haggles, PayPal settles. Drafts are inserted for you to review; you always click send.",
+  "description": "Intuitive buying experience. Compare prices and review AI-drafted offers before you send.",
   "permissions": ["sidePanel", "storage"],
   "host_permissions": ["http://localhost:3000/*", "http://127.0.0.1:3000/*"],
   "background": {

@@ -1,5 +1,7 @@
 # Fargain demo runbook
 
+For the hackathon's timed video, spoken script, and submission copy, use [Hackathon demo script](hackathon-demo-script.md).
+
 This runbook uses the mock seller and PayPal sandbox. It does not send messages to a real seller or create a live payment.
 
 ## Prepare
@@ -26,7 +28,7 @@ This runbook uses the mock seller and PayPal sandbox. It does not send messages 
 
 1. Build the extension with `VITE_BACKEND_URL=http://localhost:3000` and load `extension/dist` as an unpacked Chrome extension.
 2. Open `http://localhost:3000/mock-seller/` and open the extension side panel.
-3. Select the seeded Nintendo Switch item or add a new item with a target and max price.
+3. Add a Sony WH-1000XM5 item with a target price and a max price above the mock seller's $180 asking price. This matches the mock seller listing and keeps the example consistent.
 4. Ask the agent for a draft. Review the copy and risk flags. The extension fills the compose field; click Send yourself.
 5. Use the mock seller's scripted reply. Record the seller reply, confirm a price at or below max, and create a sandbox payment.
 6. Open the PayPal sandbox approval link and use a sandbox buyer account. Return to Fargain and refresh the payment state.

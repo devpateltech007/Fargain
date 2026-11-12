@@ -2,7 +2,7 @@
   "name": "fargain",
   "version": "0.1.0",
   "private": true,
-  "description": "Fargain: AI deal-hunting and negotiation agent for buyers. Your agent haggles, PayPal settles.",
+  "description": "Fargain: AI shopping assistance for price discovery, buyer-approved negotiation, and PayPal sandbox checkout. Intuitive buying experience.",
   "type": "module",
   "engines": {
     "node": ">=20.18.0"

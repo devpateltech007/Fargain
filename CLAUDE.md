@@ -1,7 +1,7 @@
 # Fargain: rules for AI agents and contributors
 
 Fargain is an AI deal-hunting and negotiation agent for buyers, built for the "Build What's Next
-with PayPal and AI" hackathon. Pitch: "Your agent haggles, PayPal settles."
+with PayPal and AI" hackathon. Brand line: "Intuitive buying experience."
 
 Demo features:
 

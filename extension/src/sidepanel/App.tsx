@@ -184,7 +184,7 @@ function Panel({ settings, onEditSettings }: { settings: Settings; onEditSetting
         </button>
       </header>
       <p className="muted small">
-        Your agent drafts. You approve and press send. PayPal sandbox only.
+        Intuitive buying experience. Review every draft and approve sandbox checkout.
       </p>
       {error && <p className="error">{error}</p>}
       <Alerts api={api} />
@@ -552,7 +552,7 @@ function Negotiation({
               )}
             </p>
           )}
-          {neg.status === 'paid' && <p className="ok">Paid. Your agent haggled, PayPal settled.</p>}
+          {neg.status === 'paid' && <p className="ok">Payment complete after your approval.</p>}
         </section>
       )}
 

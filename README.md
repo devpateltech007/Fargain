@@ -2,7 +2,7 @@
 
 Fargain is a buyer-side deal assistant. It watches products, compares prices, drafts negotiation messages, and creates PayPal sandbox payments after the buyer confirms a deal.
 
-**Your agent haggles. PayPal settles.** The buyer remains in control: Fargain drafts messages for review and never sends seller messages or payments automatically.
+**Intuitive buying experience.** Fargain combines AI shopping assistance, live price signals, buyer-approved negotiation, and PayPal sandbox checkout. The buyer stays in control: Fargain drafts messages for review and never sends seller messages or payments automatically.
 
 ## Product flows
 
@@ -109,6 +109,7 @@ Then load or distribute `extension/dist` using your chosen Chrome extension proc
 
 - [Architecture and data flow](docs/architecture.md)
 - [Demo runbook](docs/demo.md)
+- [Hackathon demo script and submission copy](docs/hackathon-demo-script.md)
 - [Render deployment](docs/deploy.md)
 - [Contributor rules and verified provider behavior](CLAUDE.md)
 
