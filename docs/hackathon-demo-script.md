@@ -1,78 +1,68 @@
-# Fargain hackathon demo
+# Fargain demo script
 
 ## The story
 
-### The problem
+After a long day, a shopper sees Sony headphones in an Instagram Reel. The new price is over budget, and the shopper has no energy to compare stores or negotiate with a stranger. Fargain turns that moment into a guided buying journey. Anthropic AI identifies the product and negotiates, Channel3 compares retailer prices, and PayPal Orders v2 powers buyer-approved sandbox checkout.
 
-You’re on the couch after a hard day, scrolling through a GRWM Reel, when you spot something you really want. Then the feeling turns into work. What exactly is the product? Is the price fair? Is there a better deal somewhere else? Could you find it used? Would you even know what to say to the seller? Each question means more tabs, more searching, and more effort. Eventually the excitement fades and the purchase gets abandoned—not because you stopped wanting it, but because getting it felt like a second job.
+## 2:30 video walkthrough
 
-### What we’re building
+**Title:** From “I want that” to “I got it” | Fargain
 
-Fargain bridges inspiration and purchase. The shopper shares a Reel; AI identifies the product, and Channel3 checks retailer offers and suggests a price target. If the new price is over budget, the shopper can look for a used listing on Marketplace. Once they open one and opt in to autopilot, Fargain reads the listing and conversation and negotiates with up to three guarded messages within the shopper’s maximum. It pauses on risk, uncertainty, or seller acceptance so the shopper can verify the full terms and confirm the agreed price. PayPal Orders v2 then takes the sandbox checkout through buyer approval, capture, and payment status. Less searching and message-writing means more time enjoying the things you love.
-
-## 2:50 video walkthrough
-
-**Video title:** From “I want that” to “I got it” | Fargain
-
-**Visual direction:** Make it feel like one satisfying journey. Open with a quiet after-work scroll, then let the screen move through three colorful beats: **SPOT IT** (Instagram), **MAKE IT WORK** (price and negotiation), **MAKE IT YOURS** (PayPal). Keep captions short, UI zoomed in, and transitions clean. Record the real app on the device it was built for; use simple text overlays only, no fake product screens.
-
-| Time      | Show                                                                                                                                                                                                   | Say                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0:00–0:25 | Open on the Instagram tab in Fargain with the prepared Reel link ready. State the buyer problem first, then introduce Fargain and the PayPal + AI connection.                                          | “You’re on the couch after a hard day, scrolling a GRWM Reel, and spot something you love. Then come the tabs, the price doubt, and the awkward message you don’t have energy to write. Too often, the desire ends in an abandoned cart. Fargain turns that inspiration into a purchase journey: AI identifies products and drafts offers, Channel3 checks prices, and PayPal completes checkout after the buyer approves. Let me show you.” |
-| 0:25-0:48 | Paste the prepared public Reel for Sony WH-1000XM5 headphones. Show AI identification, choose the right candidate if needed, then open Wishlist and show the Channel3 best price and suggested target. | "I send Fargain the Reel for these Sony headphones. AI identifies the product, then Channel3 checks current retailer offers and adds the find to my wishlist. I confirm the match and can see what new ones cost."                                                                                                                                                                                                                           |
-| 0:48-1:05 | Show the live best new-retail price in Wishlist. Set the target to $145 and the maximum to $160.                                                                                                       | "The new price is $[Channel3 price], above what I want to spend. I set a $145 target and a firm $160 maximum. The maximum stays private on the server, so the negotiation model never sees it."                                                                                                                                                                                                                                              |
-| 1:05-1:23 | Open the prepared Sony WH-1000XM5 Marketplace listing, condition Used - Like New, asking $180. Select the matching wishlist item and click Start autopilot.                                            | "I find the same headphones used for $180. I start Fargain with my $160 ceiling. It can handle the back-and-forth, but it cannot reveal or cross my limit."                                                                                                                                                                                                                                                                                  |
-| 1:23–1:43 | Keep the panel open as the mock seller replies. Show Fargain automatically sending its next safe reply. If the seller accepts under max, show autopilot pausing.                                       | “Now the agent handles the back-and-forth. It reads each reply, checks for risk, and responds within my limit. I don’t have to write every message or babysit every turn. When the seller accepts, Fargain pauses so I can verify the full terms.”                                                                                                                                                                                           |
-| 1:43-1:58 | Review the full deal, then click Confirm deal and open PayPal. Show Fargain creating the sandbox order and opening PayPal.                                                                             | "The accepted price is within my ceiling. I check the full terms and confirm the deal. One click creates the PayPal checkout; the agent cannot approve a price or add costs on my behalf."                                                                                                                                                                                                                                                   |
-| 1:58-2:30 | Approve in PayPal with the prepared sandbox buyer, return and show completed status.                                                                                                                   | "PayPal gives me the final approval; after that, the sandbox order is captured and Fargain shows the status. This proves the PayPal flow without moving live money."                                                                                                                                                                                                                                                                         |
-| 2:30–2:50 | Show the final payment and activity record. End on the Fargain brand.                                                                                                                                  | “AI handled product discovery and the negotiation. Channel3 found the price context. PayPal handled checkout. I set the ceiling and approved the deal. From ‘I want that’ to ‘I got it’—without hours of homework. Fargain: intuitive buying experience.”                                                                                                                                                                                    |
+| Time | Show | Say |
+| --- | --- | --- |
+| 0:00–0:25 | Open on the Reel. Establish the problem and explain PayPal up front. | “After a long day, I see headphones I want in a Reel. Then I have to identify them, compare prices, and figure out whether a used deal is worth pursuing. Fargain connects that journey. Anthropic AI identifies the product and negotiates, Channel3 compares retailer prices, and PayPal Orders v2 powers a checkout the buyer approves. Let me show you.” |
+| 0:25–0:48 | DM the Sony WH-1000XM5 Reel to `fargain.app` with “My budget is $130.” Show Fargain’s reply and the wishlist entry. | “I share the Reel and include my $130 budget in the same message. Anthropic AI identifies the Sony headphones, and Channel3 checks retailer offers. My maximum is saved privately.” |
+| 0:48–1:05 | Show the live Channel3 best offer and “Above your budget” in the dashboard. Point out the $120 target and $130 maximum. | “Channel3 found new retailer offers, but the best one is $[live price], above my $130 budget. Fargain sets a $120 target, so we can try to come in $10 under my limit.” |
+| 1:05–1:23 | Click **Open prepared Marketplace match**. Open the Fargain side panel and start autopilot with the Sony wishlist item selected. | “Fargain has a prepared Marketplace match for this demo. I open it, and the extension reads the listing. The backend enforces my $130 cap, and the seller never sees it.” |
+| 1:23–1:43 | Keep the panel open. Show the agent’s messages and seller replies. Have the seller accept the agent’s $120 offer. | “Anthropic AI negotiates within my limit. Fargain checks the listing and seller replies, then pauses when the seller accepts so I can review the terms. We agree at $120, which leaves $10 of my budget unused.” |
+| 1:43–2:05 | Confirm the accepted price and create the PayPal checkout. Show PayPal sandbox approval. | “PayPal Orders v2 creates a sandbox order for the agreed $120. I review and approve it in PayPal. Fargain captures the approved order and reports its status.” |
+| 2:05–2:30 | Return to Fargain and show the payment status and activity record. End on the brand. | “Anthropic AI handled product identification and negotiation. Channel3 checked the new price. PayPal handled buyer-approved sandbox checkout. I set the limit and approved the purchase. Fargain makes buying feel intuitive.” |
 
 ## Recording checklist
 
-- Confirm the hosted Render URL and `/api/health` before recording.
-- Prepare one public Reel link that the configured Anthropic model can identify. Instagram identification may return multiple candidates; choose the correct one on camera.
-- Use one product consistently: Sony WH-1000XM5 headphones, black. Prepare the same product in the Reel, Channel3 comparison, wishlist, and seller listing. Use a $145 target, $160 max, and a $180 Used - Like New seller listing. The mock seller is configured with a $180 ask and $140 floor, so it can accept within the buyer cap.
-- Check Channel3 live before recording. At prep time, Sony lists the WH-1000XM5 at $199.99 and Best Buy at $198. Prices can change, so use the live Channel3 amount in the voiceover. Reference prices: [Sony](https://electronics.sony.com/audio/headphones/headband/p/wh1000xm5-s) and [Best Buy](https://www.bestbuy.com/product/sony-wh-1000xm5-wireless-noise-cancelling-over-the-ear-headphones-black/J7XSRH5CXG).
-- For a repeatable demo, use the included mock seller and test the complete autopilot loop before recording. To show Facebook Marketplace, use the prepared listing and test its best-effort send control on that exact page first; Fargain pauses if it cannot identify the control safely.
-- Configure PayPal sandbox and pre-authenticate the sandbox buyer in a separate browser profile. Never show credentials.
-- Keep browser zoom readable, close unrelated tabs and notifications, and record the Chrome extension on screen.
-- Keep the video under three minutes. If PayPal approval or capture is not completed on camera, say so accurately and show the pending approval state; do not imply payment completed.
-- Upload the finished video publicly to YouTube and add its URL to the submission. Use original narration and visuals or properly licensed material; do not include unlicensed music or third-party content.
+- Confirm the Render URL and `/api/health` before recording.
+- Configure the Instagram professional account, Meta webhook, and DM permissions. In the dashboard, create a link code and send it to `fargain.app` from the buyer account. Confirm the dashboard shows **Connected**.
+- Send a Reel share and the text “My budget is $130” together in one DM. The DM webhook needs the Reel share and accompanying text in the same event for the budget to be applied.
+- If Instagram DMs are not configured, use the Instagram section in the dashboard. Paste the same Reel URL and leave **Budget maximum** at $130. This is a fallback and does not demonstrate the DM intake.
+- Use Sony WH-1000XM5 headphones consistently. The Sony demo item sets a $120 target and $130 maximum. Use the Channel3 price shown live in the dashboard; prices can change.
+- The dashboard’s **Open prepared Marketplace match** link is hardcoded to `https://www.facebook.com/marketplace/item/1469470546248672/`. This is a curated demo listing, not live Marketplace search. Confirm it is accessible, matches the product, and the extension can read and safely send on that page.
+- Rehearse the seller interaction. If Fargain offers below $120, the seller can counter at $120. The seller should accept only after Fargain actually offers $120. AI offer sequences can vary, and autopilot sends at most three messages.
+- Configure PayPal sandbox and pre-authenticate the sandbox buyer in a separate browser profile. The current Orders v2 flow demonstrates approval and capture in Fargain’s sandbox merchant account. It does not transfer funds to the Facebook seller. Do not describe it as a seller payout.
+- Keep browser zoom readable, close unrelated tabs and notifications, and keep the extension side panel open while the agent waits for seller replies.
+- If PayPal approval or capture does not complete on camera, show the actual pending state and describe it accurately. Do not imply payment completed.
+- Keep the video under three minutes and use visuals you have permission to show.
 
-## Seller-side replies for the test listing
+## Seller replies for the prepared listing
 
-Use these replies from the seller account while the Fargain buyer account runs autopilot. Keep the product details and price consistent with the listing; do not mention the buyer's private maximum.
+Use the real listing details and do not mention the buyer’s private maximum.
 
-**Listing:** Sony WH-1000XM5 headphones, black; Used – Like New; $180. Include the case and USB-C cable in the description.
+1. After Fargain’s opening message, reply with the actual condition and accessories, then say: “I’m asking $[listing price], but I’m open to a reasonable offer.”
+2. If Fargain offers below $120, reply: “Thanks for the offer. I can do $120, including the accessories shown.”
+3. When Fargain offers $120, accept that exact offer: “Deal at $120. I accept. The accessories shown are included.”
+4. If a seller asks for off-platform payment or personal contact details, answer normally only if safe; Fargain should pause on the risk flag.
 
-1. After Fargain's opening message, reply: “Yes, still available. They’re in like-new condition and include the case and USB-C cable. I’m asking $180, but I’m open to a reasonable offer.”
-2. If Fargain offers between $140 and $155, counter: "Thanks. My counter is $160, including the case and USB-C cable." If its offer is already $160, accept that amount instead.
-3. When Fargain makes its next offer at or below $160, accept that exact amount: "Yes, I accept your $[the offer]. The case and USB-C cable are included. Pickup this weekend works." Replace the bracketed amount with the agent offer.
-4. If Fargain asks about condition or accessories, answer those details directly, then return to the price. Keep the conversation on Marketplace and avoid adding unrelated payment or contact requests, which should correctly trigger Fargain’s safety pause.
-
-If the agent’s first offer is already at or below the seller’s acceptable price, accept that actual offer instead of forcing extra turns. Autopilot stops on acceptance so the buyer can review the terms and confirm the price.
+Do not force an acceptance before Fargain offers $120. If the agent does not reach $120 in three messages during rehearsal, adjust the listing or seller counters and rehearse again. Never narrate a price that is not visible in the conversation.
 
 ## Submission description
 
-Fargain is an AI-powered shopping agent for the moment a product catches your eye. Share an Instagram Reel or post; AI identifies the product and Channel3 compares retailer offers. If the new price is over budget, find a used listing and opt in to Fargain autopilot. It negotiates with up to three guarded messages within a server-enforced maximum, then pauses when the seller accepts or the conversation needs human judgment. The buyer confirms the full deal and approves the PayPal sandbox checkout. Fargain handles the tedious shopping work while the buyer sets the limits and makes the final purchase decisions.
+Fargain is an AI shopping agent for the moment a product catches your eye. DM an Instagram Reel and budget; Anthropic AI identifies the item, and Channel3 compares retailer offers. When new prices exceed the budget, Fargain can open a prepared Marketplace match and its opt-in negotiator handles up to three guarded messages within the buyer’s server-enforced maximum. The buyer reviews the seller’s acceptance and approves a PayPal Orders v2 sandbox checkout. The demo shows buyer approval and capture in Fargain’s sandbox merchant account; it does not settle funds to the Marketplace seller.
 
 ## Tools used
 
-- **Anthropic API:** identifies products from supported Instagram link context, drafts bounded negotiation messages, and extracts seller agreement/risk signals. The buyer maximum is not sent to the model.
-- **PayPal Orders v2 sandbox:** creates orders, requests buyer approval, captures approved orders, and reports payment status.
-- **Channel3 API:** matches products across retailers, compares offers, applies manually entered discounts, and supports price-watch alerts.
+- **Anthropic API:** identifies products from supported Reel context, drafts bounded negotiation messages, and extracts seller agreement and risk signals.
+- **Channel3 API:** searches retailer offers, compares prices, applies profile discounts, and supports price-watch alerts.
+- **PayPal Orders v2 sandbox:** creates orders, requests buyer approval, captures approved orders, and returns payment status.
 - **Render:** hosts the Fastify API and dashboard with persistent SQLite storage.
-- **Postman:** provides a collection for inspecting and exercising the API.
 - **Core stack:** React, Vite, Fastify, TypeScript, SQLite, and a Chrome Manifest V3 extension.
 
-## Hackathon requirement check
+## Requirement check
 
-| Requirement                                                  | Fargain evidence                                                                                    | Submission status                                               |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Meaningful PayPal and AI integration                         | AI product identification and negotiation; PayPal sandbox order, approval, and capture              | Implemented; show both in the video                             |
-| Working prototype judges can run                             | Hosted Render app and setup/run instructions in the repository                                      | Confirm the public URL is healthy before submitting             |
-| Documentation and project description                        | README, architecture, deploy guide, demo runbook, and description above                             | Present                                                         |
-| Tools identified and explained                               | Tools section above and README                                                                      | Present                                                         |
-| Public open-source repository with license at repository top | Public GitHub repository                                                                            | **License file is missing and must be added before submission** |
-| Demo video                                                   | Must be under three minutes, show the working app on its target device, publicly visible on YouTube | **Record, upload, and add the link to the submission form**     |
-| Official Rules and media rights                              | Follow official rules; use only material you may show                                               | Verify before submitting                                        |
+| Requirement | Fargain evidence | Submission status |
+| --- | --- | --- |
+| Meaningful PayPal and AI integration | AI product identification and negotiation; PayPal sandbox order, approval, and capture | Show both in the video |
+| Working prototype | Hosted Render app and repository setup instructions | Confirm public URL and integrations before submission |
+| Documentation and project description | README, architecture, deploy guide, demo runbook, and description above | Present |
+| Tools identified and explained | Tools section above and README | Present |
+| Public repository with license | Public GitHub repository | Confirm the license file is present |
+| Demo video | Under three minutes, publicly visible on YouTube | Record and add the URL to the submission |
+| Rules and media rights | Use only media you have permission to show | Verify before submitting |

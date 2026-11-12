@@ -132,4 +132,7 @@ export const migrations: string[] = [
     received_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
   );
   `,
+  /* 5: keep a buyer's budget from a Reel DM until product confirmation */ `
+  ALTER TABLE reel_sessions ADD COLUMN buyer_max_price REAL CHECK (buyer_max_price IS NULL OR buyer_max_price >= 0);
+  `,
 ];

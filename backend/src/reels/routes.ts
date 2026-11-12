@@ -20,6 +20,12 @@ const IdentifyBody = z
     url: z.string().trim().max(500).optional(),
     caption: z.string().trim().max(2200).optional(),
     note: z.string().trim().max(500).optional(),
+    buyer_max_price: z
+      .number()
+      .positive()
+      .max(1_000_000)
+      .refine((value) => Number.isInteger(value * 100), 'maximum two decimal places')
+      .optional(),
     /** Optional user screenshot as base64 (no data: prefix), max ~3.75 MB decoded. */
     screenshot_base64: z.string().max(5_000_000).optional(),
     screenshot_media_type: z.enum(['image/jpeg', 'image/png', 'image/webp']).optional(),
@@ -85,6 +91,7 @@ export async function reelRoutes(app: FastifyInstance): Promise<void> {
         sourceUrl: b.url ? canonicalInstagramUrl(findInstagramUrl(b.url)!) : null,
         caption: b.caption ?? null,
         note: b.note ?? null,
+        buyerMaxPrice: b.buyer_max_price ?? null,
         image: b.screenshot_base64
           ? { base64: b.screenshot_base64, mediaType: b.screenshot_media_type ?? 'image/jpeg' }
           : null,

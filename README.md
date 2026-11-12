@@ -9,7 +9,8 @@ Fargain is a buyer-side shopping agent. It identifies products from Instagram li
 - **Wishlist and price watch.** Save products manually, from Instagram, or from the Amazon extension. Channel3 compares retailer offers and the backend records snapshots and price-drop alerts.
 - **Negotiation autopilot.** The Chrome side panel reads supported Marketplace listings and can send up to three AI-generated messages after you enable autopilot for that listing. It stops on risk, uncertainty, unsupported send controls, or seller acceptance. Server-side guardrails enforce your maximum and block budget disclosure and risky payment requests.
 - **PayPal sandbox checkout.** After you confirm an agreed price, the backend creates a sandbox order only when the amount is within the wishlist maximum.
-- **Instagram Reel Mode.** Paste an Instagram link in the dashboard or link an Instagram professional account and share a post by DM. The product identification flow uses provided link, caption, thumbnail, or a screenshot. It does not download or scrape video.
+- **Instagram Reel Mode.** Link an Instagram professional account and DM a Reel with a budget to add the identified product, Channel3 offers, and private max price to the wishlist. The dashboard link flow is a fallback and includes a budget field. Identification uses the provided link, caption, thumbnail, or screenshot; it does not download or scrape video.
+- **Prepared Marketplace demo match.** The Sony WH-1000XM5 demo row opens a curated listing URL for the walkthrough. This shortcut is not live Marketplace search.
 - **Profile discounts.** Enter student status, birthday, memberships, and discounts manually. Fargain does not log into retailer accounts or scan email.
 
 ## Stack
@@ -95,6 +96,8 @@ npm run build:extension
 ```
 
 Then load or distribute `extension/dist` using your chosen Chrome extension process. Configure Meta webhooks only after setting the deployed HTTPS callback to `/webhooks/instagram` and the same verify token in Render and Meta. See [docs/deploy.md](docs/deploy.md) for the setup checklist and operational limits.
+
+The extension build adds the `VITE_BACKEND_URL` origin to its generated host permissions. Use the exact Render URL when building for the demo, then reload the unpacked extension in `chrome://extensions`.
 
 ## Safety and product boundaries
 

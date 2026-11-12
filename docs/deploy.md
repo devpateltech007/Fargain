@@ -22,8 +22,8 @@ The service binds to `0.0.0.0`, stores SQLite at `/var/data/fargain.db`, and kee
 - Open the service root and connect the dashboard with the API token.
 - Check that wishlist changes survive a service restart before relying on the demo.
 - Import the Postman collection and set the hosted `baseUrl` and API token in its local variables.
-- Set Meta's webhook callback to `https://YOUR-SERVICE.onrender.com/webhooks/instagram` and configure the same verify token in both places. Subscribe only to the required Instagram messaging webhook fields.
-- For the Chrome extension, build it separately with `VITE_BACKEND_URL=https://YOUR-SERVICE.onrender.com`. The backend does not serve the extension bundle.
+- Set Meta's webhook callback to `https://YOUR-SERVICE.onrender.com/webhooks/instagram` and configure the same verify token in both places. Subscribe to the Instagram messaging fields needed for Reel shares and accompanying text. Link the buyer account from the dashboard before trying DM intake.
+- For the Chrome extension, build it separately with `VITE_BACKEND_URL=https://YOUR-SERVICE.onrender.com`. The build adds that exact origin to the generated extension host permissions. Reload the unpacked extension after rebuilding; the backend does not serve the extension bundle.
 
 ## Operational limits
 

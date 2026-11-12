@@ -103,6 +103,9 @@ const money = (value: number | null | undefined) =>
   value == null
     ? '—'
     : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+const DEMO_MARKETPLACE_URL = 'https://www.facebook.com/marketplace/item/1469470546248672/';
+const isSonyDemoItem = (title: string) =>
+  /sony/i.test(title) && /wh[\s-]?1000\s*-?\s*xm5/i.test(title);
 const initialProfile: Profile = { student: false, memberships: [], discounts: [] };
 
 function App() {
@@ -125,6 +128,7 @@ function App() {
   });
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [igUrl, setIgUrl] = useState('');
+  const [igBudget, setIgBudget] = useState('130');
   const [igResult, setIgResult] = useState<ReelResult | null>(null);
 
   const request = useCallback(
@@ -257,7 +261,12 @@ function App() {
     setError('');
     setIgResult(null);
     try {
-      setIgResult(await request<ReelResult>('/api/reels/identify', 'POST', { url: igUrl }));
+      setIgResult(
+        await request<ReelResult>('/api/reels/identify', 'POST', {
+          url: igUrl,
+          ...(igBudget ? { buyer_max_price: Number(igBudget) } : {}),
+        }),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not identify product');
     } finally {
@@ -585,10 +594,27 @@ function App() {
                           </td>
                           <td>
                             <span className="source-pill">{item.source}</span>
+                            {isSonyDemoItem(item.title) && (
+                              <a
+                                className="demo-match-link"
+                                href={DEMO_MARKETPLACE_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Open prepared Marketplace match ↗
+                              </a>
+                            )}
                           </td>
                           <td>{money(item.target_price)}</td>
                           <td>{money(item.max_price)}</td>
-                          <td className="good-price">{money(item.best_price)}</td>
+                          <td className="good-price">
+                            {money(item.best_price)}
+                            {item.best_price !== null &&
+                              item.max_price !== null &&
+                              item.best_price > item.max_price && (
+                                <small className="over-budget">Above your budget</small>
+                              )}
+                          </td>
                           <td>
                             <span className={`status ${item.status}`}>{item.status}</span>
                             {item.unseen_alerts > 0 && (
@@ -743,6 +769,17 @@ function App() {
                       value={igUrl}
                       onChange={(e) => setIgUrl(e.target.value)}
                       placeholder="https://www.instagram.com/reel/…"
+                    />
+                  </label>
+                  <label>
+                    Budget maximum
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={igBudget}
+                      onChange={(e) => setIgBudget(e.target.value)}
+                      placeholder="130"
                     />
                   </label>
                   <button className="primary" disabled={busy}>

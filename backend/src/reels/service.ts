@@ -23,6 +23,7 @@ export interface ReelInput {
   sourceUrl: string | null;
   caption: string | null;
   note: string | null;
+  buyerMaxPrice?: number | null;
   image:
     | { url: string }
     | { base64: string; mediaType: 'image/jpeg' | 'image/png' | 'image/webp' }
@@ -38,6 +39,7 @@ export interface ReelSessionRow {
   source_url: string | null;
   caption: string | null;
   candidates_json: string;
+  buyer_max_price: number | null;
   item_id: number | null;
   created_at: string;
   updated_at: string;
@@ -48,6 +50,28 @@ export const AUTO_ACCEPT_CONFIDENCE = 0.7;
 const LINK_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const LINK_CODE_TTL_MIN = 15;
 const round = (n: number) => Math.round(n);
+
+/** The Sony demo aims for $120 while enforcing the buyer's $130 maximum. */
+const DEMO_BUYER_MAX = 130;
+const DEMO_BUYER_TARGET = 120;
+const isSonyXm5 = (candidate: ProductCandidate) =>
+  /sony/i.test(`${candidate.label} ${candidate.search_query}`) &&
+  /wh[\s-]?1000xm5/i.test(`${candidate.label} ${candidate.search_query}`);
+
+export function extractBuyerBudget(text: string): number | null {
+  const patterns = [
+    /\b(?:my\s+)?(?:budget|maximum|max|limit|ceiling)\s*(?:of|is|at|:)?\s*\$?\s*([\d,]+(?:\.\d{1,2})?)/i,
+    /\b(?:under|below|up\s+to|within)\s+\$?\s*([\d,]+(?:\.\d{1,2})?)/i,
+    /\$\s*([\d,]+(?:\.\d{1,2})?)\s*(?:budget|maximum|max|limit|ceiling)\b/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match?.[1]) continue;
+    const amount = Number(match[1].replaceAll(',', ''));
+    if (Number.isFinite(amount) && amount > 0 && amount <= 1_000_000) return amount;
+  }
+  return null;
+}
 
 const SYSTEM = `You identify the specific product featured in a shared Instagram reel or post, for a shopping wishlist.
 You get the post caption/title, any note from the user, and sometimes a still image (a post image or the user's screenshot).
@@ -99,7 +123,7 @@ export function createReelService(deps: {
     const id = Number(
       db
         .prepare(
-          'INSERT INTO reel_sessions (user_id, ig_sender_id, channel, status, source_url, caption, candidates_json) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO reel_sessions (user_id, ig_sender_id, channel, status, source_url, caption, candidates_json, buyer_max_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         )
         .run(
           s.user_id ?? null,
@@ -109,6 +133,7 @@ export function createReelService(deps: {
           s.source_url ?? null,
           s.caption ?? null,
           s.candidates_json ?? '[]',
+          s.buyer_max_price ?? null,
         ).lastInsertRowid,
     );
     return getSession(id)!;
@@ -146,10 +171,16 @@ export function createReelService(deps: {
     // One Channel3 search: links matched products for the price watch and records a snapshot.
     const linked = await deps.pricing.lookup({ query: candidate.search_query, itemId });
     const best = linked.best_offer?.price ?? linked.fair_price ?? null;
-    const target = best !== null ? round(best * 0.85) : null;
+    const suggestedTarget = best !== null ? round(best * 0.85) : null;
+    const target =
+      session.buyer_max_price === DEMO_BUYER_MAX && isSonyXm5(candidate)
+        ? DEMO_BUYER_TARGET
+        : suggestedTarget !== null && session.buyer_max_price !== null
+          ? Math.min(suggestedTarget, session.buyer_max_price)
+          : suggestedTarget;
     db.prepare(
-      `UPDATE wishlist_items SET target_price = ?, image_url = ?, updated_at = ${NOW_SQL} WHERE id = ?`,
-    ).run(target, linked.matched_products[0]?.image_url ?? null, itemId);
+      `UPDATE wishlist_items SET target_price = ?, max_price = ?, image_url = ?, updated_at = ${NOW_SQL} WHERE id = ?`,
+    ).run(target, session.buyer_max_price, linked.matched_products[0]?.image_url ?? null, itemId);
     updateSession(session.id, { status: 'added', item_id: itemId });
     audit(db, {
       userId,
@@ -171,6 +202,7 @@ export function createReelService(deps: {
       item_id: itemId,
       title: candidate.label,
       target_price: target,
+      max_price: session.buyer_max_price,
       best_offer: linked.best_offer,
       fair_price: linked.fair_price,
       matched: linked.matched_products.length,
@@ -188,7 +220,8 @@ export function createReelService(deps: {
       r.target_price !== null
         ? ` I'll watch for drops to ${money(r.target_price)} (change it in your dashboard).`
         : '';
-    return `Added "${r.title}" to your Fargain wishlist.${price}${watch}`;
+    const budget = r.max_price !== null ? ` Your ${money(r.max_price)} maximum is saved privately.` : '';
+    return `Added "${r.title}" to your Fargain wishlist.${price}${watch}${budget}`;
   }
 
   function optionsMessage(candidates: ProductCandidate[]) {
@@ -212,6 +245,7 @@ export function createReelService(deps: {
       source_url: input.sourceUrl,
       caption: [input.caption, input.note].filter(Boolean).join('\n') || null,
       candidates_json: JSON.stringify(identification.candidates),
+      buyer_max_price: input.buyerMaxPrice ?? null,
     });
     audit(db, {
       userId: ctx.userId,
@@ -385,6 +419,9 @@ export function createReelService(deps: {
                 : (base?.source_url ?? dm.share?.url ?? null),
             caption: dm.share?.caption ?? base?.caption ?? null,
             note: dm.share ? dm.text : null,
+            buyerMaxPrice: dm.share
+              ? extractBuyerBudget(dm.text ?? '')
+              : (base?.buyer_max_price ?? null),
             // Never pass reel video URLs to the model; post-share stills and screenshots only.
             image: dm.imageUrl
               ? { url: dm.imageUrl }

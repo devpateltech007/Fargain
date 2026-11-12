@@ -279,8 +279,17 @@ function StartNegotiation({
   const [maxPrice, setMaxPrice] = useState('');
   const [target, setTarget] = useState('');
   useEffect(() => {
-    void api.wishlist().then((r) => setItems(r.items.filter((i) => i.status !== 'purchased')));
-  }, [api]);
+    void api.wishlist().then((r) => {
+      const available = r.items.filter((i) => i.status !== 'purchased');
+      setItems(available);
+      const listingTitle = listing.title.toLowerCase();
+      const matchingSonyItem = available.find((item) => {
+        const title = item.title.toLowerCase();
+        return title.includes('sony') && title.includes('xm5') && listingTitle.includes('xm5');
+      });
+      if (matchingSonyItem) setItemId(matchingSonyItem.id);
+    });
+  }, [api, listing.title]);
 
   const start = (autonomous = false) =>
     run('start', async () => {
