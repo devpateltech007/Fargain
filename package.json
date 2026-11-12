@@ -33,7 +33,8 @@
     "e2e:paypal": "tsx scripts/paypal-e2e.ts",
     "smoke:negotiation": "tsx scripts/smoke-negotiation.ts",
     "smoke:pricing": "tsx scripts/smoke-pricing.ts",
-    "probe:channel3": "tsx scripts/probe-channel3.ts"
+    "probe:channel3": "tsx scripts/probe-channel3.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

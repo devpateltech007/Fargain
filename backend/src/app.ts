@@ -1,6 +1,8 @@
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { REPO_ROOT, missingFor, requireFeature, type Env } from './config.js';
 import type { Db } from './db/index.js';
 import { assertAuthConfigured, registerAuth } from './http/auth.js';
@@ -134,6 +136,128 @@ export async function buildApp({
     llm_configured: deps.llmConfigured,
   }));
 
+  app.get('/api/dashboard/summary', async () => {
+    const wishlist = db
+      .prepare(
+        `SELECT COUNT(*) AS total,
+          SUM(CASE WHEN status = 'watching' THEN 1 ELSE 0 END) AS watching,
+          SUM(CASE WHEN status = 'negotiating' THEN 1 ELSE 0 END) AS negotiating,
+          SUM(CASE WHEN status = 'purchased' THEN 1 ELSE 0 END) AS purchased
+         FROM wishlist_items WHERE user_id = ?`,
+      )
+      .get(deps.userId) as {
+      total: number;
+      watching: number;
+      negotiating: number;
+      purchased: number;
+    };
+    const counts = db
+      .prepare(
+        `SELECT (SELECT COUNT(*) FROM negotiations n JOIN wishlist_items i ON i.id=n.item_id WHERE i.user_id=?) AS negotiations,
+          (SELECT COUNT(*) FROM payments p JOIN negotiations n ON n.id=p.negotiation_id JOIN wishlist_items i ON i.id=n.item_id WHERE i.user_id=?) AS payments,
+          (SELECT COALESCE(SUM(p.amount),0) FROM payments p JOIN negotiations n ON n.id=p.negotiation_id JOIN wishlist_items i ON i.id=n.item_id WHERE i.user_id=? AND p.status='COMPLETED') AS paid_total,
+          (SELECT COALESCE(SUM(CASE WHEN n.agreed_price IS NOT NULL AND CAST(json_extract(n.listing_json, '$.price') AS REAL) > n.agreed_price
+             THEN CAST(json_extract(n.listing_json, '$.price') AS REAL)-n.agreed_price ELSE 0 END),0)
+             FROM negotiations n JOIN wishlist_items i ON i.id=n.item_id WHERE i.user_id=? AND n.status IN ('agreed','paid')) AS saved_total`,
+      )
+      .get(deps.userId, deps.userId, deps.userId, deps.userId) as {
+      negotiations: number;
+      payments: number;
+      paid_total: number;
+      saved_total: number;
+    };
+    return { ...wishlist, ...counts };
+  });
+
+  app.get('/api/dashboard/audit', async (req) => {
+    const query = z
+      .object({
+        limit: z.coerce.number().int().min(1).max(200).default(50),
+        action: z.string().max(100).optional(),
+      })
+      .strict()
+      .parse(req.query);
+    const entries = db
+      .prepare(
+        `SELECT id, actor, action, detail_json, created_at FROM audit_log
+           WHERE user_id = ? AND (? IS NULL OR action = ?)
+           ORDER BY id DESC LIMIT ?`,
+      )
+      .all(deps.userId, query.action ?? null, query.action ?? null, query.limit)
+      .map((row) => {
+        const entry = row as {
+          id: number;
+          actor: string;
+          action: string;
+          detail_json: string;
+          created_at: string;
+        };
+        return {
+          id: `audit-${entry.id}`,
+          actor: entry.actor,
+          action: entry.action,
+          detail: JSON.parse(entry.detail_json) as unknown,
+          created_at: entry.created_at,
+        };
+      });
+    const reasoning = db
+      .prepare(
+        `SELECT m.id, m.text, m.ai_reasoning_json, m.created_at, i.title
+         FROM messages m JOIN negotiations n ON n.id=m.negotiation_id
+         JOIN wishlist_items i ON i.id=n.item_id
+         WHERE i.user_id=? AND m.ai_reasoning_json IS NOT NULL ORDER BY m.id DESC LIMIT ?`,
+      )
+      .all(deps.userId, query.limit)
+      .map((row) => {
+        const message = row as {
+          id: number;
+          text: string;
+          ai_reasoning_json: string;
+          created_at: string;
+          title: string;
+        };
+        return {
+          id: `reason-${message.id}`,
+          actor: 'agent',
+          action: 'agent.suggestion',
+          detail: {
+            item: message.title,
+            text: message.text,
+            reasoning: JSON.parse(message.ai_reasoning_json) as unknown,
+          },
+          created_at: message.created_at,
+        };
+      });
+    return {
+      entries: [...entries, ...reasoning]
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, query.limit),
+    };
+  });
+
+  app.get('/api/dashboard/wishlist', async () => {
+    return {
+      items: db
+        .prepare(
+          `SELECT i.*, (SELECT MIN(latest.price) FROM price_snapshots latest WHERE latest.item_id=i.id
+             AND latest.id=(SELECT MAX(prior.id) FROM price_snapshots prior WHERE prior.item_id=i.id AND prior.retailer=latest.retailer)) AS best_price,
+            (SELECT COUNT(*) FROM alerts a WHERE a.item_id=i.id AND a.user_id=i.user_id AND a.seen_at IS NULL) AS unseen_alerts
+           FROM wishlist_items i WHERE i.user_id=? ORDER BY i.created_at DESC, i.id DESC`,
+        )
+        .all(deps.userId),
+    };
+  });
+
+  app.get('/api/dashboard/payments', async () => ({
+    payments: db
+      .prepare(
+        `SELECT p.id, p.negotiation_id, p.paypal_order_id, p.amount, p.currency, p.status, p.approve_url, p.created_at, i.title
+         FROM payments p JOIN negotiations n ON n.id=p.negotiation_id
+         JOIN wishlist_items i ON i.id=n.item_id WHERE i.user_id=? ORDER BY p.id DESC`,
+      )
+      .all(deps.userId),
+  }));
+
   await app.register(wishlistRoutes);
   await app.register(negotiationRoutes);
   await app.register(paymentRoutes);
@@ -145,6 +269,18 @@ export async function buildApp({
     root: path.join(REPO_ROOT, 'mock-seller'),
     prefix: '/mock-seller/',
   });
+
+  // The production build serves the dashboard from the backend origin. Vite serves it separately
+  // during development, so this only succeeds after the dashboard workspace has been built.
+  const dashboardDist = path.join(REPO_ROOT, 'dashboard', 'dist');
+  if (existsSync(dashboardDist)) {
+    await app.register(fastifyStatic, {
+      root: dashboardDist,
+      prefix: '/',
+      decorateReply: false,
+      wildcard: false,
+    });
+  }
 
   return app;
 }

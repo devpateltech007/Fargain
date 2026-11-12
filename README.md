@@ -1,16 +1,125 @@
 # Fargain
 
-AI deal-hunting and negotiation agent for buyers. Your agent haggles, PayPal settles.
+Fargain is a buyer-side deal assistant. It watches products, compares prices, drafts negotiation messages, and creates PayPal sandbox payments after the buyer confirms a deal.
 
-Work in progress (hackathon build, PayPal sandbox only). Full docs land in Phase 9; for now see
-[CLAUDE.md](CLAUDE.md) for the rules, layout, and commands.
+**Your agent haggles. PayPal settles.** The buyer remains in control: Fargain drafts messages for review and never sends seller messages or payments automatically.
 
-## Quick start
+## Product flows
 
+- **Wishlist and price watch.** Save products manually, from Instagram, or from the Amazon extension. Channel3 compares retailer offers and the backend records snapshots and price-drop alerts.
+- **Negotiation assistant.** The Chrome side panel reads supported Marketplace listings and drafts messages. You review and send each message yourself. The server enforces the maximum price and blocks budget disclosure and risky payment requests.
+- **PayPal sandbox checkout.** After you confirm an agreed price, the backend creates a sandbox order only when the amount is within the wishlist maximum.
+- **Instagram Reel Mode.** Paste an Instagram link in the dashboard or link an Instagram professional account and share a post by DM. The product identification flow uses provided link, caption, thumbnail, or a screenshot. It does not download or scrape video.
+- **Profile discounts.** Enter student status, birthday, memberships, and discounts manually. Fargain does not log into retailer accounts or scan email.
+
+## Stack
+
+| Package        | Purpose                                                                   |
+| -------------- | ------------------------------------------------------------------------- |
+| `shared/`      | Zod schemas, domain types, structured LLM output schemas                  |
+| `backend/`     | Fastify API, SQLite, negotiation guardrails, pricing and payment services |
+| `dashboard/`   | React and Vite dashboard, served by the backend in production             |
+| `extension/`   | Chrome Manifest V3 side panel and site adapters                           |
+| `mock-seller/` | Repeatable seller chat for demos                                          |
+| `scripts/`     | Provider probes, smoke flows, demo data seed                              |
+
+Node 20.18 or newer is required. The lockfile pins compatible dependency versions.
+
+## Local setup
+
+1. Install dependencies and create the environment file.
+
+   ```powershell
+   npm install
+   Copy-Item .env.example .env
+   ```
+
+2. Add the provider credentials you want to use to `.env`. Start with `FARGAIN_API_TOKEN` and configure the Anthropic, Channel3, and PayPal **sandbox** credentials for the complete flow. `npm run check-env` reports which features are configured without printing secrets.
+
+3. Start the API and dashboard in separate terminals.
+
+   ```powershell
+   npm run dev:backend
+   npm run dev:dashboard
+   ```
+
+   Open [http://localhost:5173](http://localhost:5173). The dashboard asks for `FARGAIN_API_TOKEN`. If no token is configured, leave it blank during local development. The API health check is at [http://localhost:3000/api/health](http://localhost:3000/api/health).
+
+4. Optional seed data for a local demo.
+
+   ```powershell
+   npm run seed:demo
+   ```
+
+   The seed is idempotent and creates sample wishlist items, a negotiation thread, price snapshots, an alert, and a sample profile. It does not create PayPal orders. See [docs/demo.md](docs/demo.md).
+
+5. Optional Chrome extension. Build with the backend URL, then load the `extension/dist` directory as an unpacked extension from `chrome://extensions`.
+
+   ```powershell
+   $env:VITE_BACKEND_URL = 'http://localhost:3000'
+   npm run build:extension
+   ```
+
+   Enter the same API token in the extension settings. Use the mock seller at [http://localhost:3000/mock-seller/](http://localhost:3000/mock-seller/) for the repeatable negotiation demo.
+
+## Configuration
+
+Copy `.env.example` to `.env`. Keep `.env` out of version control.
+
+| Variable group               | Used for                                                               |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| `FARGAIN_API_TOKEN`          | Bearer authentication for application API routes                       |
+| `ANTHROPIC_*`                | Text negotiation and product identification                            |
+| `CHANNEL3_API_KEY`           | Product matching, price comparisons, and scheduled price watch         |
+| `PAYPAL_*`                   | PayPal Orders v2 sandbox checkout. `PAYPAL_ENV` only accepts `sandbox` |
+| `IG_*`, `META_GRAPH_VERSION` | Instagram webhook verification, account linking, and DM replies        |
+| `DATABASE_PATH`              | SQLite database file. Use a persistent disk on a hosted service        |
+
+Optional features return a clear configuration error when their provider keys are missing. Local development can run the dashboard and mock seller without every provider. Do not configure production with development routes enabled.
+
+## API and Postman
+
+Import [`postman/Fargain.postman_collection.json`](postman/Fargain.postman_collection.json) into Postman. Set `baseUrl` and `apiToken` in the collection variables. The collection includes summary, wishlist, price watch, negotiation, payment, profile, and Reel Mode requests. The health endpoint is public; other `/api/*` routes require the bearer token when configured.
+
+Money values use major currency units with at most two decimal places. The backend converts them to integer cents for price-cap comparisons. Create or edit wishlist items through the Zod-validated API. The server will reject a payment request above the item's maximum even if the client is modified.
+
+## Deploy to Render
+
+[`render.yaml`](render.yaml) defines a Node web service, health check, persistent SQLite disk, production host binding, sandbox PayPal mode, and secret environment variables. Connect the Git repository to Render and deploy the blueprint. It derives `PUBLIC_BASE_URL` from the assigned service URL. Fill the provider credentials during blueprint setup. Render generates `FARGAIN_API_TOKEN` for the service; copy it into the dashboard and extension configuration.
+
+The deployment is ready for a dashboard/API demo. For the Chrome extension, build a separate package with the deployed URL:
+
+```powershell
+$env:VITE_BACKEND_URL = 'https://YOUR-SERVICE.onrender.com'
+npm run build:extension
 ```
-npm install
-copy .env.example .env      # then fill it in
-npm run check-env           # shows which vars are set, never prints values
+
+Then load or distribute `extension/dist` using your chosen Chrome extension process. Configure Meta webhooks only after setting the deployed HTTPS callback to `/webhooks/instagram` and the same verify token in Render and Meta. See [docs/deploy.md](docs/deploy.md) for the setup checklist and operational limits.
+
+## Safety and product boundaries
+
+- The backend enforces `max_price`; the negotiation LLM never receives it.
+- PayPal is hard-coded to sandbox endpoints. There is no live-payment switch.
+- The extension only fills a message compose box. The user clicks Send.
+- Every agent draft, user approval, and payment attempt is written to the audit trail.
+- Channel3 results are filtered for exact product matches, US availability, condition, stock, and implausible outliers. The dashboard labels observed prices as comparisons, not guaranteed checkout prices.
+- Marketplace selectors are best-effort and depend on third-party page markup. The selector diagnostics appear in the extension.
+
+## Project notes
+
+- [Architecture and data flow](docs/architecture.md)
+- [Demo runbook](docs/demo.md)
+- [Render deployment](docs/deploy.md)
+- [Contributor rules and verified provider behavior](CLAUDE.md)
+
+## Development commands
+
+```powershell
+npm run build
 npm test
-npm run dev:backend         # http://localhost:3000/api/health
+npm run typecheck
+npm run lint
+npm run format:check
 ```
+
+The test suite covers payment caps, negotiation guardrails, shared schemas, Reel link parsing, and database migrations. Provider smoke commands make live API calls and should only be run when the relevant credentials are configured.

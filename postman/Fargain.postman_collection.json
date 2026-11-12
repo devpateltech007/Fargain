@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "Fargain API",
+    "description": "Fargain buyer-side deal discovery, negotiation, and PayPal sandbox API. Requests use the configured bearer token. Payment creation is sandbox only and server capped by the wishlist max price.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{apiToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "apiToken", "value": "" },
+    { "key": "itemId", "value": "1" },
+    { "key": "negotiationId", "value": "1" },
+    { "key": "paymentId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Health and dashboard",
+      "item": [
+        {
+          "name": "Health (public)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/health",
+            "auth": { "type": "noauth" }
+          }
+        },
+        {
+          "name": "Dashboard summary",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/dashboard/summary" }
+        },
+        {
+          "name": "Dashboard wishlist with best price",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/dashboard/wishlist" }
+        },
+        {
+          "name": "Dashboard payments",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/dashboard/payments" }
+        },
+        {
+          "name": "Audit trail and agent reasoning",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/dashboard/audit?limit=50" }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist and price watch",
+      "item": [
+        {
+          "name": "List wishlist",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/wishlist" }
+        },
+        {
+          "name": "Create wishlist item",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sony WH-1000XM5\",\n  \"source\": \"manual\",\n  \"target_price\": 250,\n  \"max_price\": 300\n}"
+            },
+            "url": "{{baseUrl}}/api/wishlist"
+          }
+        },
+        {
+          "name": "Update price goals",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"target_price\": 240,\n  \"max_price\": 290\n}"
+            },
+            "url": "{{baseUrl}}/api/wishlist/{{itemId}}"
+          }
+        },
+        {
+          "name": "Refresh price watch",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/pricing/refresh"
+          }
+        },
+        {
+          "name": "List alerts",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/alerts?unseen=true" }
+        }
+      ]
+    },
+    {
+      "name": "Negotiation",
+      "item": [
+        {
+          "name": "Create negotiation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": {{itemId}},\n  \"platform\": \"mock_seller\",\n  \"listing\": { \"title\": \"Demo item\", \"price\": 250, \"currency\": \"USD\" }\n}"
+            },
+            "url": "{{baseUrl}}/api/negotiations"
+          }
+        },
+        {
+          "name": "List negotiations",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/negotiations" }
+        },
+        {
+          "name": "Get negotiation with messages",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/negotiations/{{negotiationId}}" }
+        },
+        {
+          "name": "Draft a message (does not send)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instructions\": \"Ask politely about pickup today\"\n}"
+            },
+            "url": "{{baseUrl}}/api/negotiations/{{negotiationId}}/draft"
+          }
+        },
+        {
+          "name": "Record seller message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"I can do 225 if you pick it up today.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/negotiations/{{negotiationId}}/seller-message"
+          }
+        },
+        {
+          "name": "Confirm agreed price",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"agreed_price\": 225\n}" },
+            "url": "{{baseUrl}}/api/negotiations/{{negotiationId}}/confirm-price"
+          }
+        }
+      ]
+    },
+    {
+      "name": "PayPal sandbox",
+      "item": [
+        {
+          "name": "Create sandbox payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"negotiation_id\": {{negotiationId}},\n  \"amount\": 225,\n  \"currency\": \"USD\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payments/create"
+          }
+        },
+        {
+          "name": "Refresh payment status",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/payments/{{paymentId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Profile and Instagram Reel Mode",
+      "item": [
+        { "name": "Get profile", "request": { "method": "GET", "url": "{{baseUrl}}/api/profile" } },
+        {
+          "name": "Update profile and discounts",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"student\": true,\n  \"memberships\": [],\n  \"discounts\": [{\n    \"label\": \"Student discount\",\n    \"percent\": 10,\n    \"domains\": [\"nike.com\"],\n    \"requires\": \"student\"\n  }]\n}"
+            },
+            "url": "{{baseUrl}}/api/profile"
+          }
+        },
+        {
+          "name": "Start Instagram link",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{baseUrl}}/api/link/start"
+          }
+        },
+        {
+          "name": "Instagram link status",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/link/status" }
+        },
+        {
+          "name": "Identify product from Reel URL",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://www.instagram.com/reel/EXAMPLE/\"\n}"
+            },
+            "url": "{{baseUrl}}/api/reels/identify"
+          }
+        }
+      ]
+    }
+  ]
+}

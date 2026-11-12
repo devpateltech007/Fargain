@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: fargain
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build -w @fargain/shared && npm run build -w @fargain/backend && npm run build -w @fargain/dashboard
+    startCommand: npm run start -w @fargain/backend
+    healthCheckPath: /api/health
+    disk:
+      name: fargain-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_PATH
+        value: /var/data/fargain.db
+      - key: PAYPAL_ENV
+        value: sandbox
+      - key: PAYPAL_CURRENCY
+        value: USD
+      - key: DEV_ROUTES_ENABLED
+        value: false
+      - key: PRICE_WATCH_INTERVAL_MINUTES
+        value: 360
+      - key: LOG_LEVEL
+        value: info
+      - key: FARGAIN_API_TOKEN
+        generateValue: true
+      - key: PUBLIC_BASE_URL
+        fromService:
+          name: fargain
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: CHANNEL3_API_KEY
+        sync: false
+      - key: META_GRAPH_VERSION
+        value: v25.0
