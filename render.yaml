@@ -3,7 +3,7 @@ services:
     name: fargain
     runtime: node
     plan: starter
-    buildCommand: npm ci && npm run build -w @fargain/shared && npm run build -w @fargain/backend && npm run build -w @fargain/dashboard
+    buildCommand: npm ci --include=dev && npm run build -w @fargain/shared && npm run build -w @fargain/backend && npm run build -w @fargain/dashboard
     startCommand: npm run start -w @fargain/backend
     healthCheckPath: /api/health
     disk:
